@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>CampusCycle — Smart Bike Rentals</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/bike-rental/css/styles.css" />
+    <script src="/bike-rental/js/app.js" defer></script>
+  </head>
+  <body>
+    <!-- TOAST -->
+    <div id="toast-wrap"></div>
+
+    <!-- NAV -->
+    <nav>
+      <div class="nav-brand">Campus<span>Cycle</span></div>
+      <div class="nav-live"><span class="live-dot"></span>LIVE</div>
+      <div class="nav-clock" id="nav-clock">00:00:00</div>
+      <div class="nav-search">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search bikes..."
+          oninput="searchBikes(this.value)"
+        />
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchView('student', this)">
+          Student
+        </button>
+        <button class="nav-tab" id="admin-tab" onclick="goAdmin(this)">
+          Admin
+        </button>
+      </div>
+      <button
+        class="theme-btn"
+        onclick="toggleTheme()"
+        id="theme-btn"
+        title="Toggle theme"
+      >
+        🌙
+      </button>
+      <div class="nav-profile" id="nav-profile" style="display: none">
+        <button
+          class="profile-pill"
+          onclick="openModal('profile-modal')"
+          id="profile-pill"
+        >
+          👤 ...
+        </button>
+        <button class="logout-pill" onclick="logout()">🔒</button>
+      </div>
+    </nav>
+
+    <!-- AUTH VIEW -->
+    <div class="view" id="view-auth">
+      <div class="auth-wrap">
+        <div class="auth-box">
+          <div class="auth-logo">Campus<span>Cycle</span></div>
+          <div class="auth-tagline">Fleet Management Portal</div>
+          <div class="auth-tabs-row" id="auth-tabs-row">
+            <button
+              class="a-tab active"
+              id="tab-login"
+              onclick="switchAuthTab('login')"
+            >
+              Login
+            </button>
+            <button
+              class="a-tab"
+              id="tab-signup"
+              onclick="switchAuthTab('signup')"
+            >
+              Create Account
+            </button>
+          </div>
+
+          <!-- LOGIN -->
+          <div id="pane-login">
+            <div
+              class="auth-alert"
+              id="login-alert"
+              style="display: none"
+            ></div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input
+                class="form-input"
+                id="l-username"
+                placeholder="Your username"
+                autocomplete="username"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="pw-wrap">
+                <input
+                  class="form-input"
+                  id="l-password"
+                  type="password"
+                  placeholder="Your password"
+                  autocomplete="current-password"
+                  onkeydown="if (event.key === 'Enter') doLogin();"
+                />
+                <button
+                  class="pw-eye"
+                  onclick="togglePw('l-password', this)"
+                  type="button"
+                >
+                  👁
+                </button>
+              </div>
+            </div>
+            <div class="auth-row">
+              <label class="check-label"
+                ><input type="checkbox" id="l-remember" /> Remember me</label
+              >
+              <button
+                class="link-btn"
+                onclick="switchAuthTab('forgot')"
+                type="button"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <button class="btn-full" onclick="doLogin()">Login →</button>
+            <div
+              class="lockout-msg"
+              id="lockout-msg"
+              style="display: none"
+            ></div>
+          </div>
+
+          <!-- SIGNUP (will be hidden after first account) -->
+          <div id="pane-signup" style="display: none">
+            <div
+              class="auth-alert"
+              id="signup-alert"
+              style="display: none"
+            ></div>
+            <div class="role-note" id="first-acc-note" style="display: none">
+              First account will be <strong>Owner</strong>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input
+                class="form-input"
+                id="s-name"
+                placeholder="e.g. Brian Kamau"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input
+                class="form-input"
+                id="s-username"
+                placeholder="e.g. brian_k"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="pw-wrap">
+                <input
+                  class="form-input"
+                  id="s-password"
+                  type="password"
+                  placeholder="Min 6 characters"
+                />
+                <button
+                  class="pw-eye"
+                  onclick="togglePw('s-password', this)"
+                  type="button"
+                >
+                  👁
+                </button>
+              </div>
+            </div>
+            <div class="form-group" id="role-group">
+              <label class="form-label">Role</label>
+              <select class="form-input" id="s-role">
+                <option value="owner">Owner — Full Control</option>
+                <option value="staff">Staff — Rent / Return Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Question</label>
+              <select class="form-input" id="s-secq">
+                <option value="">Select a question...</option>
+                <option>What is your mother's maiden name?</option>
+                <option>What was your first pet's name?</option>
+                <option>What city were you born in?</option>
+                <option>What is your favourite teacher's name?</option>
+                <option>What was your first school's name?</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Answer</label>
+              <input class="form-input" id="s-seca" placeholder="Your answer" />
+            </div>
+            <button class="btn-full" onclick="doSignup()">
+              Create Account →
+            </button>
+          </div>
+
+          <!-- FORGOT PASSWORD -->
+          <div id="pane-forgot" style="display: none">
+            <div
+              class="auth-alert"
+              id="forgot-alert"
+              style="display: none"
+            ></div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input
+                class="form-input"
+                id="f-username"
+                placeholder="Your username"
+              />
+            </div>
+            <div class="form-group" id="f-secq-grp" style="display: none">
+              <label class="form-label" id="f-secq-label"
+                >Security Question</label
+              >
+              <input class="form-input" id="f-seca" placeholder="Your answer" />
+            </div>
+            <div class="form-group" id="f-newpw-grp" style="display: none">
+              <label class="form-label">New Password</label>
+              <input
+                class="form-input"
+                id="f-newpw"
+                type="password"
+                placeholder="New password (min 6 chars)"
+              />
+            </div>
+            <button class="btn-full" onclick="doForgot()">Continue →</button>
+            <button
+              class="link-btn"
+              style="display: block; text-align: center; margin-top: 14px"
+              onclick="switchAuthTab('login')"
+            >
+              ← Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT VIEW -->
+    <div class="view active" id="view-student">
+      <!-- Hero section (unchanged) -->
+      <div class="hero">
+        <div class="hero-row">
+          <div class="hero-left">
+            <div class="hero-tag">Campus Bike Rentals · Est. 2026</div>
+            <div class="hero-title">
+              Grab a <span>Bike.</span><br />Pay as you <span>Return.</span
+              ><br />
+              CARRY A COLLATERAL!!
+            </div>
+            <div class="hero-sub">
+              Check availability live, rent in seconds, return when done.<br /><br />
+              Pay via M-Pesa Till or Cash on return.
+            </div>
+          </div>
+          <div class="pricing-row">
+            <div class="p-card">
+              <div class="p-card-label">First Hour</div>
+              <div class="p-card-val">
+                60<small style="font-size: 20px">/-</small>
+              </div>
+              <div class="p-card-sub">KES flat rate</div>
+            </div>
+            <div class="p-card">
+              <div class="p-card-label">After 1 hr</div>
+              <div class="p-card-val">
+                +1<small style="font-size: 16px">/min</small>
+              </div>
+              <div class="p-card-sub">KES per extra minute</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats bar (unchanged) -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val g" id="stat-avail">0</span
+            ><span class="stat-key">Available</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val r" id="stat-taken">0</span
+            ><span class="stat-key">Rented Out</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span
+              class="stat-val"
+              style="color: var(--yellow)"
+              id="stat-reserved"
+              >0</span
+            ><span class="stat-key">Reserved</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val" style="color: var(--text3)" id="stat-maint"
+              >0</span
+            ><span class="stat-key">Maintenance</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val a" id="stat-total">0</span
+            ><span class="stat-key">Total Fleet</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val b" id="stat-earn">0</span
+            ><span class="stat-key">Today KES</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-data">
+            <span class="stat-val" id="stat-rentals" style="color: var(--text2)"
+              >0</span
+            ><span class="stat-key">Today Rentals</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fleet-warning" id="fleet-warning" style="display: none">
+        Low fleet alert — only <span id="fleet-warn-n">1</span> bike(s)
+        available!
+      </div>
+
+      <div class="controls">
+        <button class="f-btn active" onclick="filterBikes('all', this)">
+          All Bikes
+        </button>
+        <button class="f-btn" onclick="filterBikes('available', this)">
+          Available
+        </button>
+        <button class="f-btn" onclick="filterBikes('taken', this)">
+          Rented
+        </button>
+        <button class="f-btn" onclick="filterBikes('reserved', this)">
+          Reserved
+        </button>
+        <button class="f-btn" onclick="filterBikes('maintenance', this)">
+          Maintenance
+        </button>
+        <button class="f-btn" onclick="filterBikes('returning', this)">
+          Returning Soon
+        </button>
+        <select class="sort-select" onchange="sortBikes(this.value)">
+          <option value="default">Sort: Default</option>
+          <option value="available">Available First</option>
+          <option value="popular">Most Popular</option>
+          <option value="rating">Highest Rated</option>
+          <option value="name">A–Z</option>
+        </select>
+      </div>
+
+      <div class="section-title">Fleet Status</div>
+      <div class="bike-grid" id="bike-grid"></div>
+
+      <div class="section-title">Today's Analytics</div>
+      <div class="analytics">
+        <div class="ana-grid">
+          <div class="ana-card">
+            <div class="ana-val" id="ana-earn">0</div>
+            <div class="ana-key">Earnings (KES)</div>
+          </div>
+          <div class="ana-card">
+            <div class="ana-val" id="ana-count">0</div>
+            <div class="ana-key">Total Rentals</div>
+          </div>
+          <div class="ana-card">
+            <div class="ana-val" id="ana-avg">—</div>
+            <div class="ana-key">Avg Duration</div>
+          </div>
+          <div class="ana-card">
+            <div class="ana-val" id="ana-pop">—</div>
+            <div class="ana-key">Most Used</div>
+          </div>
+          <div class="ana-card">
+            <div class="ana-val" id="ana-unpaid">0</div>
+            <div class="ana-key">Unpaid</div>
+          </div>
+          <div class="ana-card">
+            <div class="ana-val" id="ana-res">0</div>
+            <div class="ana-key">Active Reservations</div>
+          </div>
+        </div>
+        <div class="history-wrap">
+          <div class="history-head">
+            <div class="history-title">Rental History</div>
+            <div style="display: flex; gap: 8px">
+              <button class="btn-export" onclick="exportCSV()">📤 CSV</button
+              ><button class="btn-export" onclick="exportPDF()">
+                🖨️ Print
+              </button>
+            </div>
+          </div>
+          <div id="history-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div class="view" id="view-admin">
+      <div class="admin-hero">
+        <div>
+          <div class="admin-title"><span>Admin</span> Dashboard</div>
+          <div class="admin-role-badge" id="admin-role-badge">—</div>
+        </div>
+        <div class="admin-actions">
+          <button
+            class="admin-btn ghost"
+            id="btn-add-bike"
+            onclick="openAddBikeModal()"
+          >
+            + Add Bike
+          </button>
+          <button class="admin-btn ghost" id="btn-export" onclick="exportCSV()">
+            📤 CSV
+          </button>
+          <button
+            class="admin-btn danger"
+            id="btn-reset-day"
+            onclick="resetDay()"
+          >
+            🔄 Reset Day
+          </button>
+          <button class="admin-btn ghost" onclick="openModal('profile-modal')">
+            👤 Profile
+          </button>
+          <button class="admin-btn danger" onclick="logout()">🔒 Logout</button>
+        </div>
+      </div>
+
+      <div class="kpi-row" id="admin-kpis"></div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Peak Rental Hours</div>
+          <div id="chart-peak" class="chart-area"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Revenue Per Bike</div>
+          <div id="chart-revenue" class="chart-area"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Top 3 Bikes</div>
+          <div id="chart-top3" class="chart-area"></div>
+        </div>
+      </div>
+
+      <div class="admin-split">
+        <div>
+          <div class="section-title" style="padding: 0 0 14px">
+            Live Activity Feed
+          </div>
+          <div class="feed-wrap" id="activity-feed"></div>
+        </div>
+        <div id="accounts-panel">
+          <div class="section-title" style="padding: 0 0 14px">
+            Staff Accounts
+          </div>
+          <div id="accounts-list"></div>
+          <button
+            class="admin-btn primary"
+            style="width: 100%; margin-top: 12px"
+            id="add-staff-btn"
+            onclick="openAddStaffModal()"
+          >
+            + Add Staff
+          </button>
+        </div>
+      </div>
+
+      <div class="fleet-section">
+        <div class="section-title" style="padding: 0 0 14px">
+          Fleet Management
+        </div>
+        <div style="overflow-x: auto">
+          <table class="fleet-table">
+            <thead>
+              <tr>
+                <th>Bike</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Condition</th>
+                <th>Renter</th>
+                <th>Start</th>
+                <th>Duration</th>
+                <th>Cost</th>
+                <th>Payment</th>
+                <th>Rentals</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fleet-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fleet-section">
+        <div class="section-title" style="padding: 0 0 14px">
+          Active Reservations
+        </div>
+        <div id="reservations-list"></div>
+      </div>
+
+      <div class="fleet-section">
+        <div class="section-title" style="padding: 0 0 14px">Maintenance</div>
+        <div id="maintenance-list"></div>
+      </div>
+
+      <div class="fleet-section">
+        <div class="section-title" style="padding: 0 0 14px">
+          Full Rental History
+        </div>
+        <div class="history-wrap" id="admin-history"></div>
+      </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Rent Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="rent-modal"
+      onclick="handleBdClick(event, 'rent-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">RENT BIKE</div>
+        <div class="modal-sub" id="rent-modal-sub"></div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label
+          ><input
+            class="form-input"
+            id="r-name"
+            placeholder="e.g. Brian Kamau"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student Reg. Number</label
+          ><input
+            class="form-input"
+            id="r-sid"
+            placeholder="e.g. SCT221-0001/2024"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone (optional)</label
+          ><input
+            class="form-input"
+            id="r-phone"
+            placeholder="e.g. 0712345678"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Expected Return Time</label
+          ><input
+            class="form-input"
+            type="time"
+            id="r-return"
+            oninput="calcCost()"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <div class="pay-toggle">
+            <button class="pay-opt active" onclick="setPayM('cash', this)">
+              Cash</button
+            ><button class="pay-opt" onclick="setPayM('mpesa', this)">
+              M-Pesa
+            </button>
+          </div>
+        </div>
+        <div class="cost-box" id="cost-box" style="display: none">
+          <div class="c-row">
+            <span>First 60 min (flat)</span><span>KES 60</span>
+          </div>
+          <div class="c-row" id="extra-row" style="display: none">
+            <span>Extra <span id="extra-m">0</span> min × KES 1</span
+            ><span>KES <span id="extra-c">0</span></span>
+          </div>
+          <div class="c-row">
+            <span>Estimated Total</span><span id="total-c">KES 60</span>
+          </div>
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('rent-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="confirmRent()">
+            Confirm Rental →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="return-modal"
+      onclick="handleBdClick(event, 'return-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">RETURN BIKE</div>
+        <div class="modal-sub" id="ret-modal-sub"></div>
+        <div class="return-summary" id="ret-summary"></div>
+        <div class="form-group">
+          <label class="form-label">Payment Status</label>
+          <div class="pay-toggle">
+            <button
+              class="pay-opt"
+              id="ret-unpaid-btn"
+              onclick="setRetPayStatus('unpaid', this)"
+            >
+              Unpaid</button
+            ><button
+              class="pay-opt active"
+              id="ret-paid-btn"
+              onclick="setRetPayStatus('paid', this)"
+            >
+              Paid
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <div class="pay-toggle">
+            <button
+              class="pay-opt active"
+              id="ret-cash-btn"
+              onclick="setRetPayM('cash', this)"
+            >
+              Cash</button
+            ><button
+              class="pay-opt"
+              id="ret-mpesa-btn"
+              onclick="setRetPayM('mpesa', this)"
+            >
+              M-Pesa
+            </button>
+          </div>
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('return-modal')">
+            Cancel</button
+          ><button class="btn-confirm green" onclick="confirmReturn()">
+            Mark Returned
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Bike Modal (with image gallery field) -->
+    <div
+      class="backdrop"
+      id="add-bike-modal"
+      onclick="handleBdClick(event, 'add-bike-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">ADD BIKE</div>
+        <div class="modal-sub">Add a new bike to the fleet</div>
+        <div class="form-group">
+          <label class="form-label">Bike Name</label
+          ><input
+            class="form-input"
+            id="new-name"
+            placeholder="e.g. Thunder Hawk"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type / Category</label
+          ><input
+            class="form-input"
+            id="new-type"
+            placeholder="e.g. Mountain Bike"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Specs</label
+          ><input
+            class="form-input"
+            id="new-specs"
+            placeholder="e.g. 21-speed · Medium Frame"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condition</label
+          ><select class="form-input" id="new-cond">
+            <option value="excellent">Excellent</option>
+            <option value="good" selected>Good</option>
+            <option value="fair">Fair</option>
+            <option value="poor">Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image URL (optional)</label
+          ><input
+            class="form-input"
+            id="new-img"
+            placeholder="https://..."
+            oninput="prevImg('new-img', 'ab-preview')"
+          />
+        </div>
+        <img id="ab-preview" class="img-preview" alt="preview" />
+        <div class="form-group">
+          <label class="form-label"
+            >Image Gallery URLs (comma separated, optional)</label
+          ><input
+            class="form-input"
+            id="new-gallery"
+            placeholder="https://..., https://..., ..."
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (comma separated)</label
+          ><input
+            class="form-input"
+            id="new-tags"
+            placeholder="e.g. Fast, Light, Road"
+          />
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('add-bike-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="addBike()">
+            Add to Fleet →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Bike Modal (with image gallery field) -->
+    <div
+      class="backdrop"
+      id="edit-bike-modal"
+      onclick="handleBdClick(event, 'edit-bike-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">EDIT BIKE</div>
+        <div class="modal-sub" id="edit-modal-sub"></div>
+        <input type="hidden" id="edit-bike-id" />
+        <div class="form-group">
+          <label class="form-label">Bike Name</label
+          ><input class="form-input" id="edit-name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type / Category</label
+          ><input class="form-input" id="edit-type" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Specs</label
+          ><input class="form-input" id="edit-specs" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condition</label
+          ><select class="form-input" id="edit-cond">
+            <option value="excellent">Excellent</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+            <option value="poor">Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image URL</label
+          ><input
+            class="form-input"
+            id="edit-img"
+            oninput="prevImg('edit-img', 'eb-preview')"
+          />
+        </div>
+        <img id="eb-preview" class="img-preview" alt="preview" />
+        <div class="form-group">
+          <label class="form-label">Image Gallery URLs (comma separated)</label
+          ><input class="form-input" id="edit-gallery" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (comma separated)</label
+          ><input class="form-input" id="edit-tags" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Maintenance Note</label
+          ><input
+            class="form-input"
+            id="edit-maint"
+            placeholder="e.g. Needs brake adjustment"
+          />
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('edit-bike-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="saveEditBike()">
+            Save Changes →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reserve Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="reserve-modal"
+      onclick="handleBdClick(event, 'reserve-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">RESERVE BIKE</div>
+        <div class="modal-sub" id="reserve-modal-sub"></div>
+        <div class="form-group">
+          <label class="form-label">Your Name</label
+          ><input
+            class="form-input"
+            id="res-name"
+            placeholder="e.g. Alice Wanjiku"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student ID</label
+          ><input
+            class="form-input"
+            id="res-sid"
+            placeholder="e.g. SCT-001/2024"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label
+          ><input
+            class="form-input"
+            id="res-phone"
+            placeholder="e.g. 0712345678"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reserve Until (time)</label
+          ><input class="form-input" type="time" id="res-until" />
+        </div>
+        <div class="reserve-note">
+          Bike will be held exclusively for you until your chosen time. After
+          that it becomes available again.
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('reserve-modal')">
+            Cancel</button
+          ><button class="btn-confirm yellow" onclick="confirmReserve()">
+            Reserve Bike →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="payment-modal"
+      onclick="handleBdClick(event, 'payment-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">MARK PAYMENT</div>
+        <div class="modal-sub" id="payment-modal-sub"></div>
+        <input type="hidden" id="payment-hist-id" />
+        <div class="return-summary" id="payment-summary"></div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <div class="pay-toggle">
+            <button class="pay-opt active" onclick="setPaymentM('cash', this)">
+              Cash</button
+            ><button class="pay-opt" onclick="setPaymentM('mpesa', this)">
+              M-Pesa
+            </button>
+          </div>
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('payment-modal')">
+            Cancel</button
+          ><button class="btn-confirm green" onclick="confirmPayment()">
+            ✅ Mark as Paid
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="profile-modal"
+      onclick="handleBdClick(event, 'profile-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">MY PROFILE</div>
+        <div class="modal-sub">Account settings &amp; info</div>
+        <div id="profile-card" class="profile-card"></div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('profile-modal')">
+            Close</button
+          ><button
+            class="btn-confirm"
+            onclick="
+              closeModal('profile-modal');
+              openModal('change-pw-modal');
+            "
+          >
+            Change Password
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change Password Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="change-pw-modal"
+      onclick="handleBdClick(event, 'change-pw-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">CHANGE PASSWORD</div>
+        <div class="modal-sub">Keep your account secure</div>
+        <div class="auth-alert" id="chpw-alert" style="display: none"></div>
+        <div class="form-group">
+          <label class="form-label">Current Password</label
+          ><input
+            class="form-input"
+            id="cp-cur"
+            type="password"
+            placeholder="Current password"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label
+          ><input
+            class="form-input"
+            id="cp-new"
+            type="password"
+            placeholder="Min 6 characters"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label
+          ><input
+            class="form-input"
+            id="cp-confirm"
+            type="password"
+            placeholder="Repeat new password"
+          />
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('change-pw-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="changePassword()">
+            Update Password →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rate Bike Modal (unchanged) -->
+    <div
+      class="backdrop"
+      id="rate-modal"
+      onclick="handleBdClick(event, 'rate-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">RATE BIKE</div>
+        <div class="modal-sub" id="rate-modal-sub"></div>
+        <input type="hidden" id="rate-bike-id" />
+        <div class="star-picker" id="star-picker">
+          <span class="star" onclick="pickStar(1)">★</span
+          ><span class="star" onclick="pickStar(2)">★</span
+          ><span class="star" onclick="pickStar(3)">★</span
+          ><span class="star" onclick="pickStar(4)">★</span
+          ><span class="star" onclick="pickStar(5)">★</span>
+        </div>
+        <div class="rating-note" id="rating-note">Tap a star to rate</div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('rate-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="submitRating()">
+            Submit Rating →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD STAFF MODAL (new) -->
+    <div
+      class="backdrop"
+      id="add-staff-modal"
+      onclick="handleBdClick(event, 'add-staff-modal')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">ADD STAFF</div>
+        <div class="modal-sub">Create a new staff account (owner only)</div>
+        <div class="auth-alert" id="staff-alert" style="display: none"></div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label
+          ><input
+            class="form-input"
+            id="staff-name"
+            placeholder="e.g. Jane Mwangi"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Username</label
+          ><input
+            class="form-input"
+            id="staff-username"
+            placeholder="e.g. jane_m"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="pw-wrap">
+            <input
+              class="form-input"
+              id="staff-password"
+              type="password"
+              placeholder="Min 6 characters"
+            /><button
+              class="pw-eye"
+              onclick="togglePw('staff-password', this)"
+              type="button"
+            >
+              👁
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Security Question</label
+          ><select class="form-input" id="staff-secq">
+            <option value="">Select a question...</option>
+            <option>What is your mother's maiden name?</option>
+            <option>What was your first pet's name?</option>
+            <option>What city were you born in?</option>
+            <option>What is your favourite teacher's name?</option>
+            <option>What was your first school's name?</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Security Answer</label
+          ><input
+            class="form-input"
+            id="staff-seca"
+            placeholder="Your answer"
+          />
+        </div>
+        <div class="modal-btns">
+          <button class="btn-cancel" onclick="closeModal('add-staff-modal')">
+            Cancel</button
+          ><button class="btn-confirm" onclick="confirmAddStaff()">
+            Create Staff →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2026 Campus Bike Rentals. All rights reserved.<br /><br />Location.Ruiru,Kiambu.
+    </footer>
+  </body>
+</html>
