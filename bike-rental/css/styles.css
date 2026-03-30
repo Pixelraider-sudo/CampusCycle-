@@ -2014,13 +2014,10 @@ select.form-input {
     color: #000;
   }
 }
-/* Additional styles for new modals and image rotation */
-#add-staff-modal .modal-box {
-  max-width: 480px;
-}
-.bike-img img {
-  transition: opacity 0.3s ease;
-}
-.bike-img img.hover {
-  opacity: 0.9;
+footer{
+  text-align: center;
+  padding: 20px;
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--text3);
 }

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════
-   CAMPUSCYCLE — IMPROVED VERSION
-   - Single owner account + owner‑only staff creation
-   - Bike image galleries with auto‑rotation (every minute) and hover switching
+   CAMPUSCYCLE — app.js
+   Full featured rental management system
+   Auth, Reservations, Payments, Charts, Feed
 ═══════════════════════════════════════════════ */
 
 /* ── STORAGE KEYS ── */
@@ -16,10 +16,9 @@ const K = {
   PREFS: "cc_prefs",
   SESSION: "cc_session",
   REMEMBER: "cc_remember",
-  IMAGE_INDEXES: "cc_image_indexes", // new: store current image index per bike
 };
 
-/* ── DEFAULT BIKES (with image galleries) ── */
+/* ── DEFAULT BIKES ── */
 const DEFAULT_BIKES = [
   {
     id: 1,
@@ -29,11 +28,6 @@ const DEFAULT_BIKES = [
     tags: ["Rugged", "Offroad"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-      "https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=600&q=80",
-      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -55,11 +49,6 @@ const DEFAULT_BIKES = [
     tags: ["Smooth", "City"],
     condition: "excellent",
     img: "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=600&q=80",
-      "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=600&q=80",
-      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -81,11 +70,6 @@ const DEFAULT_BIKES = [
     tags: ["Fast", "Light"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&q=80",
-      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -107,11 +91,6 @@ const DEFAULT_BIKES = [
     tags: ["Versatile"],
     condition: "fair",
     img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
-      "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&q=80",
-      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -133,11 +112,6 @@ const DEFAULT_BIKES = [
     tags: ["Tricks", "Compact"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=600&q=80",
-      "https://images.unsplash.com/photo-1561728091-dbb39f9c2d0c?w=600&q=80",
-      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -159,11 +133,6 @@ const DEFAULT_BIKES = [
     tags: ["Portable"],
     condition: "excellent",
     img: "https://images.unsplash.com/photo-1594942572014-04a43b9e33a3?w=600&q=80",
-    imageGallery: [
-      "https://images.unsplash.com/photo-1594942572014-04a43b9e33a3?w=600&q=80",
-      "https://images.unsplash.com/photo-1597942002282-57f5a73ae23a?w=600&q=80",
-      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-    ],
     status: "available",
     renter: null,
     sid: null,
@@ -179,7 +148,7 @@ const DEFAULT_BIKES = [
   },
 ];
 
-/* ── DATA HELPERS (unchanged) ── */
+/* ── DATA HELPERS ── */
 const get = (k) => {
   try {
     return JSON.parse(localStorage.getItem(k));
@@ -214,7 +183,7 @@ const nextId = () => {
   return b.length ? Math.max(...b.map((x) => x.id)) + 1 : 1;
 };
 
-/* ── ACTIVITY LOG (unchanged) ── */
+/* ── ACTIVITY LOG ── */
 function logActivity(msg, type = "info") {
   const icons = {
     rent: "🚲",
@@ -238,7 +207,7 @@ function logActivity(msg, type = "info") {
   save(K.ACTIVITY, log);
 }
 
-/* ── UTILS (unchanged) ── */
+/* ── UTILS ── */
 function calcCharge(startMs, endMs) {
   const mins = Math.max(0, Math.round((endMs - startMs) / 60000));
   return { mins, cost: mins <= 60 ? 60 : 60 + (mins - 60) };
@@ -284,6 +253,8 @@ function isReturningSoon(b) {
   const diff = Math.round((ret - Date.now()) / 60000);
   return diff >= 0 && diff <= 15;
 }
+
+/* ── TOAST ── */
 function toast(msg, type = "info", dur = 3500) {
   const wrap = document.getElementById("toast-wrap");
   const el = document.createElement("div");
@@ -299,15 +270,15 @@ function toast(msg, type = "info", dur = 3500) {
 }
 
 /* ═══════════════════════════════════════════════
-   AUTH SYSTEM (Modified)
+   AUTH SYSTEM
 ═══════════════════════════════════════════════ */
 let currentUser = null;
 let loginAttempts = 0;
 let lockedUntil = 0;
 let inactivityTimer = null;
 const MAX_ATTEMPTS = 3;
-const LOCK_DURATION = 5 * 60 * 1000;
-const INACTIVITY_LIMIT = 30 * 60 * 1000;
+const LOCK_DURATION = 5 * 60 * 1000; // 5 min
+const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 min
 
 function initAuth() {
   // Check remember me
@@ -320,6 +291,7 @@ function initAuth() {
       return;
     }
   }
+  // Check session
   const sesId = get(K.SESSION);
   if (sesId) {
     const acc = getAccounts().find((a) => a.id === sesId);
@@ -327,17 +299,6 @@ function initAuth() {
       currentUser = acc;
       updateAuthUI();
     }
-  }
-  // Hide signup tab if accounts exist
-  const accounts = getAccounts();
-  const signupTab = document.getElementById("tab-signup");
-  if (accounts.length > 0 && signupTab) {
-    signupTab.style.display = "none";
-    if (document.getElementById("pane-signup").style.display !== "none") {
-      switchAuthTab("login");
-    }
-  } else if (accounts.length === 0 && signupTab) {
-    signupTab.style.display = "";
   }
 }
 
@@ -351,6 +312,7 @@ function updateAuthUI() {
   } else {
     profile.style.display = "none";
   }
+  // Admin view visibility
   if (
     document.getElementById("view-admin").classList.contains("active") &&
     !loggedIn
@@ -365,6 +327,7 @@ function goAdmin(btn) {
     renderAdmin();
   } else {
     switchView("auth", btn);
+    // Show signup note if first account
     const accounts = getAccounts();
     const note = document.getElementById("first-acc-note");
     const roleGroup = document.getElementById("role-group");
@@ -389,6 +352,7 @@ function doLogin() {
   const alert = document.getElementById("login-alert");
   const lockMsg = document.getElementById("lockout-msg");
 
+  // Check lockout
   if (Date.now() < lockedUntil) {
     const rem = Math.ceil((lockedUntil - Date.now()) / 60000);
     showAlert(
@@ -432,6 +396,7 @@ function doLogin() {
     return;
   }
 
+  // Success
   loginAttempts = 0;
   lockedUntil = 0;
   lockMsg.style.display = "none";
@@ -440,6 +405,7 @@ function doLogin() {
   if (remember) save(K.REMEMBER, acc.id);
   else localStorage.removeItem(K.REMEMBER);
 
+  // Update last login
   const accs = getAccounts();
   const a = accs.find((x) => x.id === acc.id);
   if (a) {
@@ -458,20 +424,14 @@ function doLogin() {
 }
 
 function doSignup() {
-  // Only allowed if no accounts exist (first account) OR current user is owner
-  const accounts = getAccounts();
-  const isFirst = !accounts.length;
-  if (!isFirst && (!currentUser || currentUser.role !== "owner")) {
-    toast("Only the owner can create new accounts.", "error");
-    return;
-  }
-
   const name = document.getElementById("s-name").value.trim();
   const username = document.getElementById("s-username").value.trim();
   const password = document.getElementById("s-password").value;
   const secq = document.getElementById("s-secq").value;
   const seca = document.getElementById("s-seca").value.trim();
   const alert = document.getElementById("signup-alert");
+  const accounts = getAccounts();
+  const isFirst = !accounts.length;
 
   if (!name || !username || !password || !secq || !seca) {
     showAlert(alert, "All fields required.", "error");
@@ -488,12 +448,7 @@ function doSignup() {
     return;
   }
 
-  let role = isFirst ? "owner" : "staff"; // force staff for non‑first accounts
-  // If current user is owner and they are creating an account, role is staff (they can't create another owner)
-  if (!isFirst && currentUser && currentUser.role === "owner") {
-    role = "staff";
-  }
-
+  const role = isFirst ? "owner" : document.getElementById("s-role").value;
   const acc = {
     id: "acc_" + Date.now(),
     name,
@@ -508,20 +463,16 @@ function doSignup() {
   accounts.push(acc);
   saveAccounts(accounts);
 
-  if (isFirst) {
+  if (isFirst || currentUser?.role === "owner") {
     currentUser = acc;
     save(K.SESSION, acc.id);
     updateAuthUI();
     switchView("admin", null);
     renderAdmin();
-    logActivity(`${name} created account (owner)`, "auth");
+    logActivity(`${name} created account (${role})`, "auth");
     toast(`Account created! Welcome, ${name.split(" ")[0]}! 🎉`, "success");
   } else {
-    showAlert(
-      alert,
-      `Staff account for ${name} created successfully!`,
-      "success",
-    );
+    showAlert(alert, `Account for ${name} created successfully!`, "success");
     toast(`Staff account created for ${name}`, "success");
   }
 
@@ -530,60 +481,6 @@ function doSignup() {
     (id) => (document.getElementById(id).value = ""),
   );
   document.getElementById("s-secq").value = "";
-}
-
-function confirmAddStaff() {
-  // Called from the new "Add Staff" modal. Only allowed if currentUser is owner.
-  if (!currentUser || currentUser.role !== "owner") {
-    toast("Only the owner can add staff.", "error");
-    return;
-  }
-  const name = document.getElementById("staff-name").value.trim();
-  const username = document.getElementById("staff-username").value.trim();
-  const password = document.getElementById("staff-password").value;
-  const secq = document.getElementById("staff-secq").value;
-  const seca = document.getElementById("staff-seca").value.trim();
-  const alert = document.getElementById("staff-alert");
-
-  if (!name || !username || !password || !secq || !seca) {
-    showAlert(alert, "All fields required.", "error");
-    return;
-  }
-  if (password.length < 6) {
-    showAlert(alert, "Password must be at least 6 characters.", "error");
-    return;
-  }
-  const accounts = getAccounts();
-  if (
-    accounts.find((a) => a.username.toLowerCase() === username.toLowerCase())
-  ) {
-    showAlert(alert, "Username already taken.", "error");
-    return;
-  }
-
-  const acc = {
-    id: "acc_" + Date.now(),
-    name,
-    username,
-    password,
-    role: "staff",
-    secq,
-    seca: seca.toLowerCase(),
-    createdAt: Date.now(),
-    lastLogin: null,
-  };
-  accounts.push(acc);
-  saveAccounts(accounts);
-  showAlert(alert, `Staff account for ${name} created!`, "success");
-  setTimeout(() => closeModal("add-staff-modal"), 1500);
-  renderAccountsList(); // refresh the list in admin panel
-  logActivity(`${currentUser.name} created staff account: ${name}`, "admin");
-  toast(`Staff account for ${name} added.`, "success");
-  // Clear form
-  ["staff-name", "staff-username", "staff-password", "staff-seca"].forEach(
-    (id) => (document.getElementById(id).value = ""),
-  );
-  document.getElementById("staff-secq").value = "";
 }
 
 function doForgot() {
@@ -604,6 +501,7 @@ function doForgot() {
     return;
   }
 
+  // Step 1: show security question
   if (secqGrp.style.display === "none") {
     document.getElementById("f-secq-grp").style.display = "block";
     document.getElementById("f-secq-label").textContent = acc.secq;
@@ -611,6 +509,7 @@ function doForgot() {
     return;
   }
 
+  // Step 2: check answer
   if (newpwGrp.style.display === "none") {
     if (secaInput.value.trim().toLowerCase() !== acc.seca) {
       showAlert(alert, "Incorrect answer. Try again.", "error");
@@ -621,6 +520,7 @@ function doForgot() {
     return;
   }
 
+  // Step 3: reset password
   const newpw = newpwInput.value.trim();
   if (newpw.length < 6) {
     showAlert(alert, "Password must be at least 6 characters.", "error");
@@ -691,6 +591,7 @@ function changePassword() {
   toast("Password updated! 🔐", "success");
 }
 
+/* Inactivity auto-logout */
 function startInactivityTimer() {
   stopInactivityTimer();
   resetInactivityTimer();
@@ -738,7 +639,7 @@ function togglePw(id, btn) {
 }
 
 /* ═══════════════════════════════════════════════
-   THEME & CLOCK (unchanged)
+   THEME
 ═══════════════════════════════════════════════ */
 function initTheme() {
   const prefs = getPrefs();
@@ -756,6 +657,7 @@ function toggleTheme() {
   savePrefs(prefs);
 }
 
+/* ── CLOCK ── */
 function startClock() {
   const el = document.getElementById("nav-clock");
   setInterval(() => {
@@ -769,7 +671,7 @@ function startClock() {
 }
 
 /* ═══════════════════════════════════════════════
-   RENDER ENGINE (with image rotation)
+   RENDER ENGINE
 ═══════════════════════════════════════════════ */
 let currentFilter = "all",
   currentSort = "default",
@@ -786,115 +688,6 @@ let selectedPayM = "cash",
 let selectedPaymentM = "cash",
   selectedRating = 0;
 let timerInterval = null;
-let rotationInterval = null;
-let bikeImageIndices = {}; // store current index per bike
-
-// Load saved indices or initialize
-function loadImageIndices() {
-  const saved = get(K.IMAGE_INDEXES);
-  if (saved && typeof saved === "object") {
-    bikeImageIndices = saved;
-  } else {
-    bikeImageIndices = {};
-  }
-}
-function saveImageIndices() {
-  save(K.IMAGE_INDEXES, bikeImageIndices);
-}
-
-// Ensure every bike has an imageGallery array
-function ensureGallery(bike) {
-  if (!bike.imageGallery || bike.imageGallery.length === 0) {
-    // Create a gallery using the main img and fallbacks
-    const fallbacks = [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-      "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=600&q=80",
-      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
-      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
-      "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=600&q=80",
-      "https://images.unsplash.com/photo-1594942572014-04a43b9e33a3?w=600&q=80",
-    ];
-    bike.imageGallery = [
-      bike.img || fallbacks[0],
-      ...fallbacks.filter((u) => u !== bike.img).slice(0, 2),
-    ];
-  }
-  return bike;
-}
-
-// Update the displayed image for a specific bike card
-function updateBikeImage(bikeId) {
-  const bike = getBikes().find((b) => b.id === bikeId);
-  if (!bike) return;
-  ensureGallery(bike);
-  const idx = bikeImageIndices[bikeId] || 0;
-  const gallery = bike.imageGallery;
-  if (!gallery || gallery.length === 0) return;
-  const imgSrc = gallery[idx % gallery.length];
-  const imgElement = document.querySelector(
-    `.bike-card[data-id="${bikeId}"] .bike-img img`,
-  );
-  if (imgElement && imgElement.src !== imgSrc) {
-    imgElement.src = imgSrc;
-  }
-}
-
-// Rotate all bikes to next image
-function rotateAllBikeImages() {
-  const bikes = getBikes();
-  bikes.forEach((bike) => {
-    ensureGallery(bike);
-    const idx = (bikeImageIndices[bike.id] || 0) + 1;
-    bikeImageIndices[bike.id] = idx % bike.imageGallery.length;
-    updateBikeImage(bike.id);
-  });
-  saveImageIndices();
-}
-
-function startImageRotation() {
-  if (rotationInterval) clearInterval(rotationInterval);
-  rotationInterval = setInterval(() => {
-    rotateAllBikeImages();
-  }, 60000); // every minute
-}
-
-// After rendering grid, attach hover events and initialize images
-function attachImageHover() {
-  document.querySelectorAll(".bike-card").forEach((card) => {
-    const bikeId = parseInt(card.getAttribute("data-id"));
-    const img = card.querySelector(".bike-img img");
-    if (!img) return;
-    let hoverTimer = null;
-
-    const showNextImage = () => {
-      const bike = getBikes().find((b) => b.id === bikeId);
-      if (!bike) return;
-      ensureGallery(bike);
-      const gallery = bike.imageGallery;
-      if (!gallery || gallery.length === 0) return;
-      const currentIdx = bikeImageIndices[bikeId] || 0;
-      const nextIdx = (currentIdx + 1) % gallery.length;
-      img.src = gallery[nextIdx];
-    };
-
-    const revertImage = () => {
-      const bike = getBikes().find((b) => b.id === bikeId);
-      if (!bike) return;
-      ensureGallery(bike);
-      const currentIdx = bikeImageIndices[bikeId] || 0;
-      img.src = bike.imageGallery[currentIdx % bike.imageGallery.length];
-    };
-
-    img.addEventListener("mouseenter", () => {
-      if (hoverTimer) clearTimeout(hoverTimer);
-      showNextImage();
-    });
-    img.addEventListener("mouseleave", () => {
-      if (hoverTimer) clearTimeout(hoverTimer);
-      hoverTimer = setTimeout(revertImage, 300);
-    });
-  });
-}
 
 function renderAll() {
   renderGrid();
@@ -908,10 +701,9 @@ function renderAll() {
     document.getElementById("view-admin").classList.contains("active")
   )
     renderAdmin();
-  attachImageHover(); // after grid update
 }
 
-/* ── BIKE GRID ── (modified to include data-id and image from gallery) */
+/* ── BIKE GRID ── */
 function renderGrid() {
   const bikes = getBikes();
   const maxUse = Math.max(...bikes.map((b) => b.usageCount || 0), 0);
@@ -948,27 +740,19 @@ function renderGrid() {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text3);font-family:var(--font-m);font-size:13px">No bikes match your filter 🚲</div>`;
     return;
   }
-
   grid.innerHTML = list
-    .map((b, i) => {
-      ensureGallery(b);
-      // Ensure we have an index for this bike
-      if (bikeImageIndices[b.id] === undefined) bikeImageIndices[b.id] = 0;
-      const currentImg =
-        b.imageGallery[bikeImageIndices[b.id] % b.imageGallery.length];
-      return bikeCard(
+    .map((b, i) =>
+      bikeCard(
         b,
         b.usageCount === maxUse && maxUse > 0,
         favs.includes(b.id),
-        currentImg,
         i,
-      );
-    })
+      ),
+    )
     .join("");
-  saveImageIndices();
 }
 
-function bikeCard(b, isPopular, isFav, currentImg, idx) {
+function bikeCard(b, isPopular, isFav, idx) {
   const delay = Math.min(idx * 0.05, 0.3);
   let statusClass = b.status;
   if (b.status === "taken" && isReturningSoon(b)) statusClass = "returning";
@@ -983,6 +767,8 @@ function bikeCard(b, isPopular, isFav, currentImg, idx) {
   const sl = labels[statusClass] || labels[b.status];
 
   // Image + overlay
+  const imgSrc =
+    b.img || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600";
   let overlayHtml = "";
   if (b.status === "taken") {
     const stamp =
@@ -1008,15 +794,21 @@ function bikeCard(b, isPopular, isFav, currentImg, idx) {
 
   // Avg stats
   const avgTime = b.avgDuration ? fmtDuration(Math.round(b.avgDuration)) : "—";
-  const avgCard = `<div class="bike-avg"><div class="avg-item"><div class="avg-val">${b.usageCount || 0}</div><div class="avg-key">Rentals</div></div><div class="avg-item"><div class="avg-val">60/-</div><div class="avg-key">KES/hr</div></div><div class="avg-item"><div class="avg-val">${avgTime}</div><div class="avg-key">Avg Time</div></div></div>`;
+  const avgCard = `<div class="bike-avg">
+    <div class="avg-item"><div class="avg-val">${b.usageCount || 0}</div><div class="avg-key">Rentals</div></div>
+    <div class="avg-item"><div class="avg-val">60/-</div><div class="avg-key">KES/hr</div></div>
+    <div class="avg-item"><div class="avg-val">${avgTime}</div><div class="avg-key">Avg Time</div></div>
+  </div>`;
 
   // Renter / status info
   let statusBox = "",
     warningHtml = "",
     actionsHtml = "";
+
   if (b.status === "taken" && b.startTime) {
     const { cost } = calcCharge(b.startTime, Date.now());
     const returnStr = b.returnBy || "—";
+    // warnings
     if (b.returnBy) {
       const [rh, rm] = b.returnBy.split(":").map(Number);
       const retMs = new Date();
@@ -1030,8 +822,17 @@ function bikeCard(b, isPopular, isFav, currentImg, idx) {
     const elapsed = Math.round((Date.now() - b.startTime) / 60000);
     if (elapsed >= 55 && elapsed < 65)
       warningHtml = `<div class="warning-bar">⏳ Approaching 1hr — surcharge kicks in!</div>`;
-    statusBox = `<div class="renter-box"><div class="renter-row"><span class="r-key">Rented by</span><span class="r-val">${b.renter || "—"}</span></div><div class="renter-row"><span class="r-key">Student ID</span><span class="r-val" style="font-size:11px;color:var(--text2)">${b.sid || "—"}</span></div><div class="renter-row"><span class="r-key">Since</span><span class="r-val accent">${fmtTime(b.startTime)}</span></div><div class="renter-row"><span class="r-key">Return by</span><span class="r-val green">${returnStr}</span></div><div class="live-timer" id="timer-${b.id}">00:00:00</div><div class="cost-live" id="cost-live-${b.id}">💰 KES ${cost} so far</div></div>`;
-    actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Rented Out</button><button class="btn btn-notify" onclick="notifyMe(${b.id},'${b.name}')">🔔 Notify</button></div><div class="bike-actions"><button class="btn btn-return" onclick="openReturnModal(${b.id})">✅ Mark Returned</button></div>`;
+
+    statusBox = `<div class="renter-box">
+      <div class="renter-row"><span class="r-key">Rented by</span><span class="r-val">${b.renter || "—"}</span></div>
+      <div class="renter-row"><span class="r-key">Student ID</span><span class="r-val" style="font-size:11px;color:var(--text2)">${b.sid || "—"}</span></div>
+      <div class="renter-row"><span class="r-key">Since</span><span class="r-val accent">${fmtTime(b.startTime)}</span></div>
+      <div class="renter-row"><span class="r-key">Return by</span><span class="r-val green">${returnStr}</span></div>
+      <div class="live-timer" id="timer-${b.id}">00:00:00</div>
+      <div class="cost-live" id="cost-live-${b.id}">💰 KES ${cost} so far</div>
+    </div>`;
+    actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Rented Out</button><button class="btn btn-notify" onclick="notifyMe(${b.id},'${b.name}')">🔔 Notify</button></div>
+    <div class="bike-actions"><button class="btn btn-return" onclick="openReturnModal(${b.id})">✅ Mark Returned</button></div>`;
   } else if (b.status === "reserved") {
     const res = getReserves().find(
       (r) => r.bikeId === b.id && r.status === "active",
@@ -1041,28 +842,43 @@ function bikeCard(b, isPopular, isFav, currentImg, idx) {
       const retMs = new Date();
       retMs.setHours(rh, rm, 0, 0);
       const diff = Math.max(0, Math.round((retMs - Date.now()) / 60000));
-      statusBox = `<div class="reserved-box"><div class="renter-row"><span class="r-key">Reserved by</span><span class="r-val">${res.name}</span></div><div class="renter-row"><span class="r-key">Until</span><span class="r-val yellow">${res.until}</span></div><div class="renter-row"><span class="r-key">Expires in</span><span class="r-val yellow">${diff} min</span></div></div>`;
+      statusBox = `<div class="reserved-box">
+        <div class="renter-row"><span class="r-key">Reserved by</span><span class="r-val">${res.name}</span></div>
+        <div class="renter-row"><span class="r-key">Until</span><span class="r-val yellow">${res.until}</span></div>
+        <div class="renter-row"><span class="r-key">Expires in</span><span class="r-val yellow">${diff} min</span></div>
+      </div>`;
     }
     actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Reserved</button><button class="btn btn-notify" onclick="notifyMe(${b.id},'${b.name}')">🔔 Notify</button></div>`;
   } else if (b.status === "maintenance") {
-    statusBox = `<div class="maint-box"><div class="renter-row"><span class="r-key">Status</span><span class="r-val" style="color:var(--text3)">Under Maintenance</span></div>${b.maintenanceNote ? `<div class="renter-row"><span class="r-key">Note</span><span style="font-size:11px;color:var(--text3)">${b.maintenanceNote}</span></div>` : ""}</div>`;
+    statusBox = `<div class="maint-box">
+      <div class="renter-row"><span class="r-key">Status</span><span class="r-val" style="color:var(--text3)">Under Maintenance</span></div>
+      ${b.maintenanceNote ? `<div class="renter-row"><span class="r-key">Note</span><span style="font-size:11px;color:var(--text3)">${b.maintenanceNote}</span></div>` : ""}
+    </div>`;
     actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Not Available</button></div>`;
   } else {
-    actionsHtml = `<div class="bike-actions"><button class="btn btn-rent" onclick="openRentModal(${b.id})">Rent This Bike</button><button class="btn btn-reserve" onclick="openReserveModal(${b.id})">📅</button></div><div class="bike-actions"><button class="btn btn-rate" onclick="openRateModal(${b.id},'${b.name}')">⭐ Rate</button></div>`;
+    // Available
+    actionsHtml = `<div class="bike-actions">
+      <button class="btn btn-rent" onclick="openRentModal(${b.id})">Rent This Bike</button>
+      <button class="btn btn-reserve" onclick="openReserveModal(${b.id})">📅</button>
+    </div>
+    <div class="bike-actions"><button class="btn btn-rate" onclick="openRateModal(${b.id},'${b.name}')">⭐ Rate</button></div>`;
   }
 
   return `<div class="bike-card ${statusClass}${isPopular ? " popular" : ""}" data-status="${b.status}" data-id="${b.id}" style="animation-delay:${delay}s">
     <div class="s-badge ${statusClass}"><span class="s-dot"></span>${sl}</div>
     ${popularCrown}
     <div class="bike-img">
-      <img src="${currentImg}" alt="${b.name}" onerror="this.src='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'"/>
+      <img src="${imgSrc}" alt="${b.name}" onerror="this.src='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'"/>
       ${overlayHtml}
     </div>
     <div class="bike-body">
       <div class="bike-meta"><span class="bike-id">#BC-${String(b.id).padStart(3, "0")}</span><span class="bike-usage">${b.usageCount || 0} rents</span></div>
       <div class="bike-name">${b.name}</div>
       <div class="bike-type">${b.type} · ${b.specs}</div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><div class="bike-stars">${starsHtml(b.rating, b.ratingCount)}</div>${condHtml(b.condition)}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <div class="bike-stars">${starsHtml(b.rating, b.ratingCount)}</div>
+        ${condHtml(b.condition)}
+      </div>
       ${tags ? `<div class="bike-tags">${tags}</div>` : ""}
       ${avgCard}
       ${warningHtml}
@@ -1073,21 +889,460 @@ function bikeCard(b, isPopular, isFav, currentImg, idx) {
   </div>`;
 }
 
-// The rest of the functions (stats, analytics, history, fleet warning, etc.) remain unchanged.
-// Only add/modify the functions that handle bike creation/editing to include the gallery field.
+/* ── STATS ── */
+function renderStats() {
+  const bikes = getBikes();
+  const day = getDay();
+  const reserves = getReserves().filter((r) => r.status === "active");
+  document.getElementById("stat-avail").textContent = bikes.filter(
+    (b) => b.status === "available",
+  ).length;
+  document.getElementById("stat-taken").textContent = bikes.filter(
+    (b) => b.status === "taken",
+  ).length;
+  document.getElementById("stat-reserved").textContent = bikes.filter(
+    (b) => b.status === "reserved",
+  ).length;
+  document.getElementById("stat-maint").textContent = bikes.filter(
+    (b) => b.status === "maintenance",
+  ).length;
+  document.getElementById("stat-total").textContent = bikes.length;
+  document.getElementById("stat-earn").textContent = "KES " + day.earn;
+  document.getElementById("stat-rentals").textContent = day.count;
+}
 
-function addBike() {
+/* ── ANALYTICS ── */
+function renderAnalytics() {
+  const history = getHistory();
+  const day = getDay();
+  const bikes = getBikes();
+  const done = history.filter((h) => h.duration);
+  const avg = done.length
+    ? Math.round(done.reduce((a, h) => a + h.duration, 0) / done.length)
+    : 0;
+  const unpaid = history.filter(
+    (h) => h.payStatus === "unpaid" && h.status === "done",
+  ).length;
+  const activeRes = getReserves().filter((r) => r.status === "active").length;
+  const pop = [...bikes].sort(
+    (a, b) => (b.usageCount || 0) - (a.usageCount || 0),
+  )[0];
+
+  document.getElementById("ana-earn").textContent = day.earn;
+  document.getElementById("ana-count").textContent = day.count;
+  document.getElementById("ana-avg").textContent = avg ? fmtDuration(avg) : "—";
+  document.getElementById("ana-pop").textContent = pop
+    ? pop.name.split(" ")[0]
+    : "—";
+  document.getElementById("ana-unpaid").textContent = unpaid;
+  document.getElementById("ana-res").textContent = activeRes;
+}
+
+/* ── HISTORY ── */
+function renderHistory() {
+  const history = [...getHistory()].reverse();
+  const body = document.getElementById("history-body");
+  if (!history.length) {
+    body.innerHTML = `<div class="no-history">No rental history yet 📋</div>`;
+    return;
+  }
+  body.innerHTML = `<table class="history-table">
+    <thead><tr><th>Bike</th><th>Student</th><th>Start</th><th>Duration</th><th>Cost</th><th>Pay Method</th><th>Status</th><th>Payment</th></tr></thead>
+    <tbody>${history
+      .map(
+        (h) => `<tr>
+      <td>${h.bikeName}</td>
+      <td><div>${h.renter}</div><div style="font-size:10px;color:var(--text3)">${h.sid || ""}</div></td>
+      <td style="font-family:var(--font-m);font-size:11px">${h.startStr}</td>
+      <td style="font-family:var(--font-m);font-size:11px">${h.duration ? fmtDuration(h.duration) : '<span style="color:var(--red)">Active</span>'}</td>
+      <td style="color:var(--accent);font-family:var(--font-m)">KES ${h.cost}</td>
+      <td style="font-family:var(--font-m);font-size:10px;color:var(--text3)">${(h.payMethod || "cash").toUpperCase()}</td>
+      <td><span class="status-pill ${h.status}">${h.status}</span></td>
+      <td><span class="status-pill ${h.payStatus || "unpaid"}">${h.payStatus || "unpaid"}</span></td>
+    </tr>`,
+      )
+      .join("")}</tbody>
+  </table>`;
+}
+
+/* ── FLEET WARNING ── */
+function checkFleetWarning() {
+  const avail = getBikes().filter((b) => b.status === "available").length;
+  const w = document.getElementById("fleet-warning");
+  if (avail <= 1) {
+    document.getElementById("fleet-warn-n").textContent = avail;
+    w.style.display = "block";
+    if (avail === 0) toast("🚨 All bikes are rented out!", "warn", 6000);
+  } else {
+    w.style.display = "none";
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   LIVE TIMERS
+═══════════════════════════════════════════════ */
+function startTimers() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const bikes = getBikes();
+    bikes.forEach((b) => {
+      if (b.status !== "taken" || !b.startTime) return;
+      const timerEl = document.getElementById("timer-" + b.id);
+      const costEl = document.getElementById("cost-live-" + b.id);
+      if (!timerEl) return;
+      const elapsed = Date.now() - b.startTime;
+      timerEl.textContent = [
+        String(Math.floor(elapsed / 3600000)).padStart(2, "0"),
+        String(Math.floor((elapsed % 3600000) / 60000)).padStart(2, "0"),
+        String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0"),
+      ].join(":");
+      if (costEl) {
+        const { cost } = calcCharge(b.startTime, Date.now());
+        costEl.textContent = `💰 KES ${cost} so far`;
+        costEl.style.color = cost > 60 ? "var(--red)" : "var(--green)";
+      }
+      // 1hr alert
+      const mins = Math.round(elapsed / 60000);
+      if (mins === 60 && !b._alerted) {
+        const b2 = getBikes();
+        const bi = b2.find((x) => x.id === b.id);
+        if (bi) {
+          bi._alerted = true;
+          saveBikes(b2);
+        }
+        toast(
+          `⏰ ${b.name} hit 1 hour! Surcharge active for ${b.renter}.`,
+          "warn",
+          6000,
+        );
+        logActivity(`${b.name} surcharge started (${b.renter})`, "system");
+      }
+    });
+    if (Date.now() % 30000 < 1100) renderGrid();
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════
+   RENT FLOW
+═══════════════════════════════════════════════ */
+function openRentModal(id) {
+  const bike = getBikes().find((b) => b.id === id);
+  if (!bike || bike.status !== "available") return;
+  currentRentId = id;
+  document.getElementById("rent-modal-sub").textContent =
+    `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
+  ["r-name", "r-sid", "r-phone", "r-return"].forEach(
+    (i) => (document.getElementById(i).value = ""),
+  );
+  document.getElementById("cost-box").style.display = "none";
+  selectedPayM = "cash";
+  document
+    .querySelectorAll("#rent-modal .pay-opt")
+    .forEach((b, i) => b.classList.toggle("active", i === 0));
+  openModal("rent-modal");
+}
+
+function calcCost() {
+  const val = document.getElementById("r-return").value;
+  const box = document.getElementById("cost-box");
+  if (!val) {
+    box.style.display = "none";
+    return;
+  }
+  const [h, m] = val.split(":").map(Number);
+  const ret = new Date();
+  ret.setHours(h, m, 0, 0);
+  let diff = Math.round((ret - Date.now()) / 60000);
+  if (diff <= 0) diff = 60;
+  const extra = Math.max(0, diff - 60);
+  box.style.display = "block";
+  document.getElementById("extra-m").textContent = extra;
+  document.getElementById("extra-c").textContent = extra;
+  document.getElementById("total-c").textContent = "KES " + (60 + extra);
+  document.getElementById("extra-row").style.display =
+    extra > 0 ? "flex" : "none";
+}
+
+function setPayM(m, btn) {
+  selectedPayM = m;
+  btn
+    .closest(".pay-toggle")
+    .querySelectorAll(".pay-opt")
+    .forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function confirmRent() {
+  const name = document.getElementById("r-name").value.trim();
+  const sid = document.getElementById("r-sid").value.trim();
+  const phone = document.getElementById("r-phone").value.trim();
+  const ret = document.getElementById("r-return").value;
+  if (!name || !sid) {
+    toast("Please fill name and student ID", "error");
+    return;
+  }
+
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === currentRentId);
+  if (!bike) return;
+
+  bike.status = "taken";
+  bike.renter = name;
+  bike.sid = sid;
+  bike.phone = phone || null;
+  bike.startTime = Date.now();
+  bike.returnBy = ret || null;
+  bike.payMethod = selectedPayM;
+  bike.usageCount = (bike.usageCount || 0) + 1;
+  bike._alerted = false;
+  saveBikes(bikes);
+
+  const h = getHistory();
+  h.push({
+    id: Date.now(),
+    bikeId: bike.id,
+    bikeName: bike.name,
+    renter: name,
+    sid,
+    phone: phone || null,
+    startTime: bike.startTime,
+    startStr: fmtTime(bike.startTime),
+    returnBy: ret || null,
+    payMethod: selectedPayM,
+    cost: 60,
+    status: "active",
+    payStatus: "unpaid",
+    duration: null,
+  });
+  saveHistory(h);
+
+  const day = getDay();
+  day.count++;
+  saveDay(day);
+  logActivity(`${name} rented ${bike.name}`, "rent");
+  closeModal("rent-modal");
+  renderAll();
+  startTimers();
+  toast(`🚲 ${name} rented ${bike.name}! Timer started.`, "success");
+}
+
+/* ═══════════════════════════════════════════════
+   RETURN FLOW
+═══════════════════════════════════════════════ */
+function openReturnModal(id) {
+  const bike = getBikes().find((b) => b.id === id);
+  if (!bike || bike.status !== "taken") return;
+  currentReturnId = id;
+  const { mins, cost } = calcCharge(bike.startTime, Date.now());
+  document.getElementById("ret-modal-sub").textContent =
+    `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
+  document.getElementById("ret-summary").innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text3);font-size:12px">Student</span><strong>${bike.renter}</strong></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text3);font-size:12px">Duration</span><strong>${fmtDuration(mins)}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-size:12px">Total Due</span><strong style="font-size:22px;font-family:var(--font-d);color:var(--accent)">KES ${cost}</strong></div>
+    ${cost > 60 ? `<div style="margin-top:8px;font-size:11px;color:var(--red);font-family:var(--font-m)">Base KES 60 + ${mins - 60} extra min × KES 1 = KES ${cost - 60}</div>` : ""}`;
+  selectedRetPayStatus = "paid";
+  selectedRetPayM = "cash";
+  document.getElementById("ret-paid-btn").classList.add("active");
+  document.getElementById("ret-unpaid-btn").classList.remove("active");
+  document.getElementById("ret-cash-btn").classList.add("active");
+  document.getElementById("ret-mpesa-btn").classList.remove("active");
+  openModal("return-modal");
+}
+
+function setRetPayStatus(s, btn) {
+  selectedRetPayStatus = s;
+  btn
+    .closest(".pay-toggle")
+    .querySelectorAll(".pay-opt")
+    .forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+function setRetPayM(m, btn) {
+  selectedRetPayM = m;
+  btn
+    .closest(".pay-toggle")
+    .querySelectorAll(".pay-opt")
+    .forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function confirmReturn() {
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === currentReturnId);
+  if (!bike) return;
+  const { mins, cost } = calcCharge(bike.startTime, Date.now());
+  const renter = bike.renter;
+  const bikeName = bike.name;
+
+  // Update avg duration
+  const prevCount = (bike.usageCount || 1) - 1;
+  bike.avgDuration =
+    prevCount > 0
+      ? ((bike.avgDuration || 0) * prevCount + mins) / bike.usageCount
+      : mins;
+  bike.status = "available";
+  bike.renter = null;
+  bike.sid = null;
+  bike.phone = null;
+  bike.startTime = null;
+  bike.returnBy = null;
+  bike._alerted = false;
+  saveBikes(bikes);
+
+  const h = getHistory();
+  const entry = [...h]
+    .reverse()
+    .find((x) => x.bikeId === currentReturnId && x.status === "active");
+  if (entry) {
+    entry.status = "done";
+    entry.duration = mins;
+    entry.cost = cost;
+    entry.payStatus = selectedRetPayStatus;
+    entry.payMethod = selectedRetPayM;
+    entry.endStr = fmtTime(Date.now());
+  }
+  saveHistory(h);
+
+  const day = getDay();
+  if (selectedRetPayStatus === "paid") day.earn += cost;
+  saveDay(day);
+
+  logActivity(`${bikeName} returned by ${renter} — KES ${cost}`, "return");
+  closeModal("return-modal");
+  renderAll();
+  toast(`✅ ${bikeName} returned. Charge: KES ${cost}`, "success", 5000);
+}
+
+/* ═══════════════════════════════════════════════
+   RESERVATION FLOW
+═══════════════════════════════════════════════ */
+function openReserveModal(id) {
+  const bike = getBikes().find((b) => b.id === id);
+  if (!bike || bike.status !== "available") return;
+  currentReserveId = id;
+  document.getElementById("reserve-modal-sub").textContent =
+    `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
+  ["res-name", "res-sid", "res-phone", "res-until"].forEach(
+    (i) => (document.getElementById(i).value = ""),
+  );
+  openModal("reserve-modal");
+}
+
+function confirmReserve() {
+  const name = document.getElementById("res-name").value.trim();
+  const sid = document.getElementById("res-sid").value.trim();
+  const phone = document.getElementById("res-phone").value.trim();
+  const until = document.getElementById("res-until").value;
+  if (!name || !sid || !until) {
+    toast("Please fill all fields", "error");
+    return;
+  }
+
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === currentReserveId);
+  if (!bike) return;
+  bike.status = "reserved";
+  saveBikes(bikes);
+
+  const res = getReserves();
+  res.push({
+    id: Date.now(),
+    bikeId: bike.id,
+    bikeName: bike.name,
+    name,
+    sid,
+    phone: phone || null,
+    until,
+    status: "active",
+    createdAt: Date.now(),
+  });
+  saveReserves(res);
+
+  logActivity(`${name} reserved ${bike.name} until ${until}`, "reserve");
+  closeModal("reserve-modal");
+  renderAll();
+  toast(`📅 ${bike.name} reserved for ${name} until ${until}!`, "info");
+}
+
+function cancelReservation(resId) {
+  const res = getReserves();
+  const entry = res.find((r) => r.id === resId);
+  if (!entry) return;
+  entry.status = "cancelled";
+  saveReserves(res);
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === entry.bikeId);
+  if (bike && bike.status === "reserved") {
+    bike.status = "available";
+    saveBikes(bikes);
+  }
+  logActivity(`Reservation for ${entry.bikeName} cancelled`, "cancel");
+  renderAll();
+  toast(`Reservation cancelled. ${entry.bikeName} is now available.`, "info");
+}
+
+function checkExpiredReservations() {
+  const res = getReserves();
+  let changed = false;
+  res.forEach((r) => {
+    if (r.status !== "active") return;
+    const [h, m] = r.until.split(":").map(Number);
+    const expiry = new Date();
+    expiry.setHours(h, m, 0, 0);
+    if (Date.now() > expiry.getTime() + 60000) {
+      r.status = "expired";
+      const bikes = getBikes();
+      const bike = bikes.find((b) => b.id === r.bikeId);
+      if (bike && bike.status === "reserved") {
+        bike.status = "available";
+        saveBikes(bikes);
+      }
+      changed = true;
+      toast(
+        `📅 Reservation for ${r.bikeName} expired — now available!`,
+        "info",
+      );
+      logActivity(`Reservation for ${r.bikeName} expired`, "system");
+    }
+  });
+  if (changed) saveReserves(res);
+}
+
+/* ═══════════════════════════════════════════════
+   ADD / EDIT / REMOVE BIKES
+═══════════════════════════════════════════════ */
+function openAddBikeModal() {
   if (!currentUser || currentUser.role !== "owner") {
     toast("Owner access only", "error");
     return;
   }
+  ["new-name", "new-type", "new-specs", "new-img", "new-tags"].forEach(
+    (i) => (document.getElementById(i).value = ""),
+  );
+  document.getElementById("new-cond").value = "good";
+  document.getElementById("ab-preview").style.display = "none";
+  openModal("add-bike-modal");
+}
+
+function prevImg(inputId, previewId) {
+  const url = document.getElementById(inputId).value.trim();
+  const prev = document.getElementById(previewId);
+  if (url) {
+    prev.src = url;
+    prev.style.display = "block";
+  } else {
+    prev.style.display = "none";
+  }
+}
+
+function addBike() {
   const name = document.getElementById("new-name").value.trim();
   const type = document.getElementById("new-type").value.trim();
   const specs = document.getElementById("new-specs").value.trim();
   const img = document.getElementById("new-img").value.trim();
   const cond = document.getElementById("new-cond").value;
   const tagsRaw = document.getElementById("new-tags").value;
-  const galleryRaw = document.getElementById("new-gallery").value;
   if (!name || !type) {
     toast("Name and type are required", "error");
     return;
@@ -1098,19 +1353,6 @@ function addBike() {
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
-  let gallery = [];
-  if (galleryRaw) {
-    gallery = galleryRaw
-      .split(",")
-      .map((u) => u.trim())
-      .filter((u) => u);
-  } else if (img) {
-    gallery = [img];
-  } else {
-    gallery = [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-    ];
-  }
   const bikes = getBikes();
   bikes.push({
     id: nextId(),
@@ -1119,8 +1361,8 @@ function addBike() {
     specs: specs || "Standard",
     tags,
     condition: cond,
-    img: img || gallery[0],
-    imageGallery: gallery,
+    img:
+      img || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600",
     status: "available",
     renter: null,
     sid: null,
@@ -1157,9 +1399,6 @@ function openEditBikeModal(id) {
   document.getElementById("edit-specs").value = bike.specs;
   document.getElementById("edit-cond").value = bike.condition || "good";
   document.getElementById("edit-img").value = bike.img || "";
-  document.getElementById("edit-gallery").value = (
-    bike.imageGallery || []
-  ).join(", ");
   document.getElementById("edit-tags").value = (bike.tags || []).join(", ");
   document.getElementById("edit-maint").value = bike.maintenanceNote || "";
   const prev = document.getElementById("eb-preview");
@@ -1183,20 +1422,6 @@ function saveEditBike() {
   bike.condition = document.getElementById("edit-cond").value;
   const img = document.getElementById("edit-img").value.trim();
   if (img) bike.img = img;
-  const galleryRaw = document.getElementById("edit-gallery").value.trim();
-  if (galleryRaw) {
-    bike.imageGallery = galleryRaw
-      .split(",")
-      .map((u) => u.trim())
-      .filter((u) => u);
-  } else if (img) {
-    bike.imageGallery = [img];
-  } else if (!bike.imageGallery || bike.imageGallery.length === 0) {
-    bike.imageGallery = [
-      bike.img ||
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-    ];
-  }
   const tagsRaw = document.getElementById("edit-tags").value;
   bike.tags = tagsRaw
     ? tagsRaw
@@ -1391,13 +1616,14 @@ function searchBikes(val) {
 }
 
 /* ═══════════════════════════════════════════════
-   ADMIN RENDER (unchanged)
+   ADMIN RENDER
 ═══════════════════════════════════════════════ */
 function renderAdmin() {
   if (!currentUser) return;
   const isOwner = currentUser.role === "owner";
   document.getElementById("admin-role-badge").textContent =
     currentUser.role.toUpperCase() + " — " + currentUser.name;
+  // Hide owner-only controls for staff
   ["btn-add-bike", "btn-reset-day", "btn-export", "accounts-panel"].forEach(
     (id) => {
       const el = document.getElementById(id);
@@ -1439,9 +1665,10 @@ function renderAdmin() {
   renderAdminHistory();
 }
 
-/* ── CHARTS (unchanged) ── */
+/* ── CHARTS ── */
 function renderCharts() {
   const history = getHistory().filter((h) => h.startTime);
+  // Peak hours
   const hours = new Array(24).fill(0);
   history.forEach((h) => {
     const hr = new Date(h.startTime).getHours();
@@ -1465,6 +1692,7 @@ function renderCharts() {
   document.getElementById("chart-peak").innerHTML =
     `<svg viewBox="0 0 320 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:130px">${peakBars}</svg>`;
 
+  // Revenue per bike
   const bikes = getBikes();
   const bikeRevenue = {};
   history
@@ -1493,6 +1721,7 @@ function renderCharts() {
     ? `<svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:130px">${revBars}</svg>`
     : `<div style="text-align:center;padding:40px;font-family:var(--font-m);font-size:11px;color:var(--text3)">No data yet</div>`;
 
+  // Top 3
   const top3 = [...bikes]
     .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
     .slice(0, 3);
@@ -1512,7 +1741,7 @@ function renderCharts() {
     `<div style="text-align:center;padding:30px;font-family:var(--font-m);font-size:11px;color:var(--text3)">No data yet</div>`;
 }
 
-/* ── ACTIVITY FEED (unchanged) ── */
+/* ── ACTIVITY FEED ── */
 function renderActivityFeed() {
   const log = getActivity().slice(0, 30);
   const wrap = document.getElementById("activity-feed");
@@ -1532,7 +1761,7 @@ function renderActivityFeed() {
     .join("");
 }
 
-/* ── ACCOUNTS LIST (unchanged) ── */
+/* ── ACCOUNTS LIST ── */
 function renderAccountsList() {
   const accounts = getAccounts();
   const list = document.getElementById("accounts-list");
@@ -1553,7 +1782,7 @@ function renderAccountsList() {
     .join("");
 }
 
-/* ── FLEET TABLE (unchanged) ── */
+/* ── FLEET TABLE ── */
 function renderFleetTable() {
   const bikes = getBikes();
   const isOwner = currentUser?.role === "owner";
@@ -1564,6 +1793,7 @@ function renderFleetTable() {
         isActive && b.startTime
           ? calcCharge(b.startTime, Date.now())
           : { mins: 0, cost: 0 };
+      // Find unpaid history for this bike if active
       const unpaidEntry = isActive
         ? getHistory()
             .filter((h) => h.bikeId === b.id && h.status === "active")
@@ -1594,7 +1824,7 @@ function renderFleetTable() {
     .join("");
 }
 
-/* ── RESERVATIONS (unchanged) ── */
+/* ── RESERVATIONS ── */
 function renderReservations() {
   const res = getReserves().filter((r) => r.status === "active");
   const wrap = document.getElementById("reservations-list");
@@ -1622,7 +1852,7 @@ function renderReservations() {
     .join("");
 }
 
-/* ── MAINTENANCE (unchanged) ── */
+/* ── MAINTENANCE ── */
 function renderMaintenance() {
   const bikes = getBikes().filter((b) => b.status === "maintenance");
   const wrap = document.getElementById("maintenance-list");
@@ -1643,7 +1873,7 @@ function renderMaintenance() {
     .join("");
 }
 
-/* ── ADMIN HISTORY (unchanged) ── */
+/* ── ADMIN HISTORY ── */
 function renderAdminHistory() {
   const h = [...getHistory()].reverse();
   const wrap = document.getElementById("admin-history");
@@ -1654,25 +1884,27 @@ function renderAdminHistory() {
   wrap.innerHTML = `
     <div class="history-head">
       <div class="history-title">All Rentals</div>
-      <div style="display:flex;gap:8px"><button class="btn-export" onclick="exportCSV()">📤 CSV</button><button class="btn-export" onclick="exportPDF()">🖨️ Print</button></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-export" onclick="exportCSV()">📤 CSV</button>
+        <button class="btn-export" onclick="exportPDF()">🖨️ Print</button>
+      </div>
     </div>
     <table class="history-table">
       <thead><tr><th>Bike</th><th>Student</th><th>Reg No.</th><th>Start</th><th>Duration</th><th>Cost</th><th>Pay</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>${h
         .map(
-          (entry) => ` 
-        <tr>
-          <td>${entry.bikeName}</td>
-          <td>${entry.renter}</td>
-          <td style="font-family:var(--font-m);font-size:10px;color:var(--text2)">${entry.sid || "—"}</td>
-          <td style="font-family:var(--font-m);font-size:11px">${entry.startStr}</td>
-          <td style="font-family:var(--font-m);font-size:11px">${entry.duration ? fmtDuration(entry.duration) : '<span style="color:var(--red)">Active</span>'}</td>
-          <td style="color:var(--accent);font-family:var(--font-m)">KES ${entry.cost}</td>
-          <td><span class="status-pill ${entry.payStatus || "unpaid"}">${entry.payStatus || "unpaid"}</span></td>
-          <td style="font-family:var(--font-m);font-size:10px;color:var(--text3)">${(entry.payMethod || "cash").toUpperCase()}</td>
-          <td><span class="status-pill ${entry.status}">${entry.status}</span></td>
-          <td>${entry.status === "done" && entry.payStatus !== "paid" ? `<button class="btn-sm pay" onclick="openPaymentModal(${entry.id})">Pay</button>` : ""}</td>
-        </tr>`,
+          (entry) => `<tr>
+        <td>${entry.bikeName}</td>
+        <td>${entry.renter}</td>
+        <td style="font-family:var(--font-m);font-size:10px;color:var(--text2)">${entry.sid || "—"}</td>
+        <td style="font-family:var(--font-m);font-size:11px">${entry.startStr}</td>
+        <td style="font-family:var(--font-m);font-size:11px">${entry.duration ? fmtDuration(entry.duration) : '<span style="color:var(--red)">Active</span>'}</td>
+        <td style="color:var(--accent);font-family:var(--font-m)">KES ${entry.cost}</td>
+        <td><span class="status-pill ${entry.payStatus || "unpaid"}">${entry.payStatus || "unpaid"}</span></td>
+        <td style="font-family:var(--font-m);font-size:10px;color:var(--text3)">${(entry.payMethod || "cash").toUpperCase()}</td>
+        <td><span class="status-pill ${entry.status}">${entry.status}</span></td>
+        <td>${entry.status === "done" && entry.payStatus !== "paid" ? `<button class="btn-sm pay" onclick="openPaymentModal(${entry.id})">Pay</button>` : ""}</td>
+      </tr>`,
         )
         .join("")}
       </tbody>
@@ -1680,7 +1912,7 @@ function renderAdminHistory() {
 }
 
 /* ═══════════════════════════════════════════════
-   EXPORT (unchanged)
+   EXPORT
 ═══════════════════════════════════════════════ */
 function exportCSV() {
   const h = getHistory();
@@ -1722,12 +1954,13 @@ function exportCSV() {
   URL.revokeObjectURL(url);
   toast("📥 CSV exported!", "success");
 }
+
 function exportPDF() {
   window.print();
 }
 
 /* ═══════════════════════════════════════════════
-   RESET DAY (unchanged)
+   RESET DAY
 ═══════════════════════════════════════════════ */
 function resetDay() {
   if (!currentUser || currentUser.role !== "owner") {
@@ -1743,7 +1976,7 @@ function resetDay() {
 }
 
 /* ═══════════════════════════════════════════════
-   MODAL HELPERS (unchanged)
+   MODAL HELPERS
 ═══════════════════════════════════════════════ */
 function openModal(id) {
   document.getElementById(id).classList.add("open");
@@ -1766,11 +1999,10 @@ document.addEventListener("keydown", (e) => {
       "profile-modal",
       "change-pw-modal",
       "rate-modal",
-      "add-staff-modal",
     ].forEach(closeModal);
 });
 
-/* ── PROFILE MODAL (unchanged) ── */
+/* ── PROFILE MODAL ── */
 function openProfileModal() {
   if (!currentUser) return;
   document.getElementById("profile-card").innerHTML = `
@@ -1782,8 +2014,11 @@ function openProfileModal() {
   openModal("profile-modal");
 }
 
+/* Override openModal to populate profile */
+const _origOpen = openModal;
+
 /* ═══════════════════════════════════════════════
-   VIEW SWITCHER (unchanged)
+   VIEW SWITCHER
 ═══════════════════════════════════════════════ */
 function switchView(view, btn) {
   document
@@ -1797,8 +2032,9 @@ function switchView(view, btn) {
 }
 
 /* ═══════════════════════════════════════════════
-   AUTO SYSTEMS (unchanged)
+   AUTO SYSTEMS
 ═══════════════════════════════════════════════ */
+// Midnight reset
 function checkMidnightReset() {
   const day = getDay();
   if (day.date !== new Date().toDateString()) {
@@ -1806,6 +2042,8 @@ function checkMidnightReset() {
     logActivity("New day — stats auto reset", "system");
   }
 }
+
+// Auto refresh
 setInterval(() => {
   checkExpiredReservations();
   checkMidnightReset();
@@ -1826,7 +2064,6 @@ setInterval(() => {
    INIT
 ═══════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
-  loadImageIndices();
   initTheme();
   startClock();
   initAuth();
@@ -1834,15 +2071,19 @@ document.addEventListener("DOMContentLoaded", () => {
   checkExpiredReservations();
   renderAll();
   startTimers();
-  startImageRotation(); // start the auto-rotation
 
+  // If admin tab is active and user is logged in, render admin
   if (currentUser) startInactivityTimer();
 
+  // Profile modal hook
   document.getElementById("profile-modal").addEventListener("click", (e) => {
     if (e.target.id === "profile-modal") closeModal("profile-modal");
   });
+  // Populate profile when opened
+  document.querySelector("[onclick=\"openModal('profile-modal')\"]");
 });
 
+// Patch openModal to auto-populate profile
 window.openModal = function (id) {
   if (id === "profile-modal" && currentUser) {
     document.getElementById("profile-card").innerHTML = `
