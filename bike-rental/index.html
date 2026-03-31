@@ -12,7 +12,6 @@
     <script src="/bike-rental/js/app.js" defer></script>
   </head>
   <body>
-    <!-- TOAST -->
     <div id="toast-wrap"></div>
 
     <!-- NAV -->
@@ -74,6 +73,7 @@
               class="a-tab"
               id="tab-signup"
               onclick="switchAuthTab('signup')"
+              style="display: none"
             >
               Create Account
             </button>
@@ -135,7 +135,7 @@
             ></div>
           </div>
 
-          <!-- SIGNUP (will be hidden after first account) -->
+          <!-- SIGNUP -->
           <div id="pane-signup" style="display: none">
             <div
               class="auth-alert"
@@ -178,13 +178,6 @@
                   👁
                 </button>
               </div>
-            </div>
-            <div class="form-group" id="role-group">
-              <label class="form-label">Role</label>
-              <select class="form-input" id="s-role">
-                <option value="owner">Owner — Full Control</option>
-                <option value="staff">Staff — Rent / Return Only</option>
-              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Security Question</label>
@@ -251,7 +244,6 @@
 
     <!-- STUDENT VIEW -->
     <div class="view active" id="view-student">
-      <!-- Hero section (unchanged) -->
       <div class="hero">
         <div class="hero-row">
           <div class="hero-left">
@@ -285,7 +277,6 @@
         </div>
       </div>
 
-      <!-- Stats bar (unchanged) -->
       <div class="stats-bar">
         <div class="stat-item">
           <div class="stat-data">
@@ -534,9 +525,7 @@
       </div>
     </div>
 
-    <!-- MODALS -->
-
-    <!-- Rent Modal (unchanged) -->
+    <!-- MODALS (Rent, Return, Reserve, Payment, Rate, Profile, Change Password) -->
     <div
       class="backdrop"
       id="rent-modal"
@@ -610,7 +599,6 @@
       </div>
     </div>
 
-    <!-- Return Modal (unchanged) -->
     <div
       class="backdrop"
       id="return-modal"
@@ -666,7 +654,6 @@
       </div>
     </div>
 
-    <!-- Add Bike Modal (with image gallery field) -->
     <div
       class="backdrop"
       id="add-bike-modal"
@@ -709,7 +696,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Image URL (optional)</label
+          <label class="form-label">Primary Image URL</label
           ><input
             class="form-input"
             id="new-img"
@@ -720,7 +707,7 @@
         <img id="ab-preview" class="img-preview" alt="preview" />
         <div class="form-group">
           <label class="form-label"
-            >Image Gallery URLs (comma separated, optional)</label
+            >Gallery URLs (comma separated for auto-rotation)</label
           ><input
             class="form-input"
             id="new-gallery"
@@ -745,7 +732,6 @@
       </div>
     </div>
 
-    <!-- Edit Bike Modal (with image gallery field) -->
     <div
       class="backdrop"
       id="edit-bike-modal"
@@ -777,7 +763,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Image URL</label
+          <label class="form-label">Primary Image URL</label
           ><input
             class="form-input"
             id="edit-img"
@@ -786,7 +772,7 @@
         </div>
         <img id="eb-preview" class="img-preview" alt="preview" />
         <div class="form-group">
-          <label class="form-label">Image Gallery URLs (comma separated)</label
+          <label class="form-label">Gallery URLs (comma separated)</label
           ><input class="form-input" id="edit-gallery" />
         </div>
         <div class="form-group">
@@ -811,7 +797,6 @@
       </div>
     </div>
 
-    <!-- Reserve Modal (unchanged) -->
     <div
       class="backdrop"
       id="reserve-modal"
@@ -849,8 +834,7 @@
           ><input class="form-input" type="time" id="res-until" />
         </div>
         <div class="reserve-note">
-          Bike will be held exclusively for you until your chosen time. After
-          that it becomes available again.
+          Bike will be held exclusively for you until your chosen time.
         </div>
         <div class="modal-btns">
           <button class="btn-cancel" onclick="closeModal('reserve-modal')">
@@ -862,7 +846,6 @@
       </div>
     </div>
 
-    <!-- Payment Modal (unchanged) -->
     <div
       class="backdrop"
       id="payment-modal"
@@ -887,13 +870,12 @@
           <button class="btn-cancel" onclick="closeModal('payment-modal')">
             Cancel</button
           ><button class="btn-confirm green" onclick="confirmPayment()">
-            ✅ Mark as Paid
+            Mark as Paid
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Profile Modal (unchanged) -->
     <div
       class="backdrop"
       id="profile-modal"
@@ -919,7 +901,6 @@
       </div>
     </div>
 
-    <!-- Change Password Modal (unchanged) -->
     <div
       class="backdrop"
       id="change-pw-modal"
@@ -966,7 +947,6 @@
       </div>
     </div>
 
-    <!-- Rate Bike Modal (unchanged) -->
     <div
       class="backdrop"
       id="rate-modal"
@@ -994,7 +974,7 @@
       </div>
     </div>
 
-    <!-- ADD STAFF MODAL (new) -->
+    <!-- ADD STAFF MODAL -->
     <div
       class="backdrop"
       id="add-staff-modal"
@@ -1067,7 +1047,8 @@
     </div>
 
     <footer>
-      &copy; 2026 Campus Bike Rentals. All rights reserved.<br /><br />Location.Ruiru,Kiambu.
+      &copy; 2026 Campus Bike Rentals. All rights reserved.<br /><br />Location:
+      Ruiru, Kiambu.
     </footer>
   </body>
 </html>

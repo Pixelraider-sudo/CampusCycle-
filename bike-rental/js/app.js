@@ -1,10 +1,5 @@
-/* ═══════════════════════════════════════════════
-   CAMPUSCYCLE — app.js
-   Full featured rental management system
-   Auth, Reservations, Payments, Charts, Feed
-═══════════════════════════════════════════════ */
-
-/* ── STORAGE KEYS ── */
+/* CAMPUSCYCLE — Bike Rental Management System Features: Auth, Rentals, Reservations, Analytic*/
+// Storage keys
 const K = {
   BIKES: "cc_bikes",
   HISTORY: "cc_history",
@@ -16,9 +11,10 @@ const K = {
   PREFS: "cc_prefs",
   SESSION: "cc_session",
   REMEMBER: "cc_remember",
+  OWNER_CREATED: "cc_owner_created",
 };
 
-/* ── DEFAULT BIKES ── */
+// Default bike fleet
 const DEFAULT_BIKES = [
   {
     id: 1,
@@ -28,6 +24,11 @@ const DEFAULT_BIKES = [
     tags: ["Rugged", "Offroad"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
+      "https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=600&q=80",
+      "https://images.unsplash.com/photo-1511994298241-608e28f14fde?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -40,6 +41,7 @@ const DEFAULT_BIKES = [
     rating: 4.5,
     ratingCount: 3,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   },
   {
     id: 2,
@@ -49,6 +51,10 @@ const DEFAULT_BIKES = [
     tags: ["Smooth", "City"],
     condition: "excellent",
     img: "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=600&q=80",
+      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -61,6 +67,7 @@ const DEFAULT_BIKES = [
     rating: 4.8,
     ratingCount: 6,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   },
   {
     id: 3,
@@ -70,6 +77,10 @@ const DEFAULT_BIKES = [
     tags: ["Fast", "Light"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
+      "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -82,6 +93,7 @@ const DEFAULT_BIKES = [
     rating: 4.2,
     ratingCount: 2,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   },
   {
     id: 4,
@@ -91,6 +103,10 @@ const DEFAULT_BIKES = [
     tags: ["Versatile"],
     condition: "fair",
     img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&q=80",
+      "https://images.unsplash.com/photo-1511994298241-608e28f14fde?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -103,6 +119,7 @@ const DEFAULT_BIKES = [
     rating: 4.0,
     ratingCount: 4,
     maintenanceNote: "Gears need tuning",
+    currentGalleryIndex: 0,
   },
   {
     id: 5,
@@ -112,6 +129,9 @@ const DEFAULT_BIKES = [
     tags: ["Tricks", "Compact"],
     condition: "good",
     img: "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -124,6 +144,7 @@ const DEFAULT_BIKES = [
     rating: 3.8,
     ratingCount: 2,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   },
   {
     id: 6,
@@ -133,6 +154,9 @@ const DEFAULT_BIKES = [
     tags: ["Portable"],
     condition: "excellent",
     img: "https://images.unsplash.com/photo-1594942572014-04a43b9e33a3?w=600&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1594942572014-04a43b9e33a3?w=600&q=80",
+    ],
     status: "available",
     renter: null,
     sid: null,
@@ -145,10 +169,11 @@ const DEFAULT_BIKES = [
     rating: 0,
     ratingCount: 0,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   },
 ];
 
-/* ── DATA HELPERS ── */
+// Data helpers
 const get = (k) => {
   try {
     return JSON.parse(localStorage.getItem(k));
@@ -183,7 +208,7 @@ const nextId = () => {
   return b.length ? Math.max(...b.map((x) => x.id)) + 1 : 1;
 };
 
-/* ── ACTIVITY LOG ── */
+// Activity logging
 function logActivity(msg, type = "info") {
   const icons = {
     rent: "🚲",
@@ -207,7 +232,7 @@ function logActivity(msg, type = "info") {
   save(K.ACTIVITY, log);
 }
 
-/* ── UTILS ── */
+// Utility functions
 function calcCharge(startMs, endMs) {
   const mins = Math.max(0, Math.round((endMs - startMs) / 60000));
   return { mins, cost: mins <= 60 ? 60 : 60 + (mins - 60) };
@@ -254,7 +279,7 @@ function isReturningSoon(b) {
   return diff >= 0 && diff <= 15;
 }
 
-/* ── TOAST ── */
+// Toast notifications
 function toast(msg, type = "info", dur = 3500) {
   const wrap = document.getElementById("toast-wrap");
   const el = document.createElement("div");
@@ -268,19 +293,19 @@ function toast(msg, type = "info", dur = 3500) {
     setTimeout(() => el.remove(), 350);
   }, dur);
 }
-
-/* ═══════════════════════════════════════════════
-   AUTH SYSTEM
-═══════════════════════════════════════════════ */
+/*AUTH SYSTEM*/
 let currentUser = null;
 let loginAttempts = 0;
 let lockedUntil = 0;
 let inactivityTimer = null;
 const MAX_ATTEMPTS = 3;
-const LOCK_DURATION = 5 * 60 * 1000; // 5 min
-const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 min
+const LOCK_DURATION = 5 * 60 * 1000;
+const INACTIVITY_LIMIT = 30 * 60 * 1000;
 
 function initAuth() {
+  // Check if owner already created
+  updateSignupVisibility();
+
   // Check remember me
   const remId = get(K.REMEMBER);
   if (remId) {
@@ -291,6 +316,7 @@ function initAuth() {
       return;
     }
   }
+
   // Check session
   const sesId = get(K.SESSION);
   if (sesId) {
@@ -302,17 +328,30 @@ function initAuth() {
   }
 }
 
+function updateSignupVisibility() {
+  const accounts = getAccounts();
+  const signupTab = document.getElementById("tab-signup");
+
+  // Hide signup tab if any account exists
+  if (accounts.length > 0) {
+    signupTab.style.display = "none";
+  } else {
+    signupTab.style.display = "block";
+  }
+}
+
 function updateAuthUI() {
   const loggedIn = !!currentUser;
   const profile = document.getElementById("nav-profile");
   const pill = document.getElementById("profile-pill");
+
   if (loggedIn) {
     profile.style.display = "flex";
     pill.textContent = `👤 ${currentUser.name.split(" ")[0]}`;
   } else {
     profile.style.display = "none";
   }
-  // Admin view visibility
+
   if (
     document.getElementById("view-admin").classList.contains("active") &&
     !loggedIn
@@ -327,18 +366,16 @@ function goAdmin(btn) {
     renderAdmin();
   } else {
     switchView("auth", btn);
-    // Show signup note if first account
     const accounts = getAccounts();
     const note = document.getElementById("first-acc-note");
-    const roleGroup = document.getElementById("role-group");
+
     if (!accounts.length) {
       note.style.display = "block";
-      roleGroup.style.display = "none";
     } else {
       note.style.display = "none";
-      roleGroup.style.display = "block";
     }
   }
+
   document
     .querySelectorAll(".nav-tab")
     .forEach((t) => t.classList.remove("active"));
@@ -376,6 +413,7 @@ function doLogin() {
   if (!acc || acc.password !== password) {
     loginAttempts++;
     const rem = MAX_ATTEMPTS - loginAttempts;
+
     if (loginAttempts >= MAX_ATTEMPTS) {
       lockedUntil = Date.now() + LOCK_DURATION;
       loginAttempts = 0;
@@ -402,6 +440,7 @@ function doLogin() {
   lockMsg.style.display = "none";
   currentUser = acc;
   save(K.SESSION, acc.id);
+
   if (remember) save(K.REMEMBER, acc.id);
   else localStorage.removeItem(K.REMEMBER);
 
@@ -433,14 +472,26 @@ function doSignup() {
   const accounts = getAccounts();
   const isFirst = !accounts.length;
 
+  // Access control: Only allow signup if no accounts exist
+  if (!isFirst) {
+    showAlert(
+      alert,
+      "Account creation is disabled. Only the owner can add staff.",
+      "error",
+    );
+    return;
+  }
+
   if (!name || !username || !password || !secq || !seca) {
     showAlert(alert, "All fields required.", "error");
     return;
   }
+
   if (password.length < 6) {
     showAlert(alert, "Password must be at least 6 characters.", "error");
     return;
   }
+
   if (
     accounts.find((a) => a.username.toLowerCase() === username.toLowerCase())
   ) {
@@ -448,7 +499,8 @@ function doSignup() {
     return;
   }
 
-  const role = isFirst ? "owner" : document.getElementById("s-role").value;
+  // First account is always owner
+  const role = "owner";
   const acc = {
     id: "acc_" + Date.now(),
     name,
@@ -460,27 +512,92 @@ function doSignup() {
     createdAt: Date.now(),
     lastLogin: null,
   };
+
   accounts.push(acc);
   saveAccounts(accounts);
+  save(K.OWNER_CREATED, true);
 
-  if (isFirst || currentUser?.role === "owner") {
-    currentUser = acc;
-    save(K.SESSION, acc.id);
-    updateAuthUI();
-    switchView("admin", null);
-    renderAdmin();
-    logActivity(`${name} created account (${role})`, "auth");
-    toast(`Account created! Welcome, ${name.split(" ")[0]}! 🎉`, "success");
-  } else {
-    showAlert(alert, `Account for ${name} created successfully!`, "success");
-    toast(`Staff account created for ${name}`, "success");
-  }
+  currentUser = acc;
+  save(K.SESSION, acc.id);
+  updateAuthUI();
+  updateSignupVisibility();
+  switchView("admin", null);
+  renderAdmin();
+  logActivity(`${name} created owner account`, "auth");
+  toast(`Account created! Welcome, ${name.split(" ")[0]}! 🎉`, "success");
 
   // Reset form
   ["s-name", "s-username", "s-password", "s-seca"].forEach(
     (id) => (document.getElementById(id).value = ""),
   );
   document.getElementById("s-secq").value = "";
+}
+
+// Add Staff (Owner only)
+function openAddStaffModal() {
+  if (!currentUser || currentUser.role !== "owner") {
+    toast("Owner access only", "error");
+    return;
+  }
+
+  ["staff-name", "staff-username", "staff-password", "staff-seca"].forEach(
+    (id) => (document.getElementById(id).value = ""),
+  );
+  document.getElementById("staff-secq").value = "";
+  document.getElementById("staff-alert").style.display = "none";
+  openModal("add-staff-modal");
+}
+
+function confirmAddStaff() {
+  if (!currentUser || currentUser.role !== "owner") {
+    toast("Owner access only", "error");
+    return;
+  }
+
+  const name = document.getElementById("staff-name").value.trim();
+  const username = document.getElementById("staff-username").value.trim();
+  const password = document.getElementById("staff-password").value;
+  const secq = document.getElementById("staff-secq").value;
+  const seca = document.getElementById("staff-seca").value.trim();
+  const alert = document.getElementById("staff-alert");
+  const accounts = getAccounts();
+
+  if (!name || !username || !password || !secq || !seca) {
+    showAlert(alert, "All fields required.", "error");
+    return;
+  }
+
+  if (password.length < 6) {
+    showAlert(alert, "Password must be at least 6 characters.", "error");
+    return;
+  }
+
+  if (
+    accounts.find((a) => a.username.toLowerCase() === username.toLowerCase())
+  ) {
+    showAlert(alert, "Username already taken.", "error");
+    return;
+  }
+
+  const acc = {
+    id: "acc_" + Date.now(),
+    name,
+    username,
+    password,
+    role: "staff",
+    secq,
+    seca: seca.toLowerCase(),
+    createdAt: Date.now(),
+    lastLogin: null,
+  };
+
+  accounts.push(acc);
+  saveAccounts(accounts);
+
+  logActivity(`${currentUser.name} added staff: ${name}`, "auth");
+  closeModal("add-staff-modal");
+  renderAdmin();
+  toast(`Staff account created for ${name}! 👤`, "success");
 }
 
 function doForgot() {
@@ -501,7 +618,6 @@ function doForgot() {
     return;
   }
 
-  // Step 1: show security question
   if (secqGrp.style.display === "none") {
     document.getElementById("f-secq-grp").style.display = "block";
     document.getElementById("f-secq-label").textContent = acc.secq;
@@ -509,7 +625,6 @@ function doForgot() {
     return;
   }
 
-  // Step 2: check answer
   if (newpwGrp.style.display === "none") {
     if (secaInput.value.trim().toLowerCase() !== acc.seca) {
       showAlert(alert, "Incorrect answer. Try again.", "error");
@@ -520,12 +635,12 @@ function doForgot() {
     return;
   }
 
-  // Step 3: reset password
   const newpw = newpwInput.value.trim();
   if (newpw.length < 6) {
     showAlert(alert, "Password must be at least 6 characters.", "error");
     return;
   }
+
   const accs = getAccounts();
   const target = accs.find((a) => a.id === acc.id);
   if (target) {
@@ -557,6 +672,7 @@ function logout() {
 
 function changePassword() {
   if (!currentUser) return;
+
   const cur = document.getElementById("cp-cur").value;
   const newpw = document.getElementById("cp-new").value;
   const confirm = document.getElementById("cp-confirm").value;
@@ -582,6 +698,7 @@ function changePassword() {
     saveAccounts(accs);
     currentUser.password = newpw;
   }
+
   save(K.SESSION, currentUser.id);
   showAlert(alert, "Password updated successfully!", "success");
   ["cp-cur", "cp-new", "cp-confirm"].forEach(
@@ -591,7 +708,7 @@ function changePassword() {
   toast("Password updated! 🔐", "success");
 }
 
-/* Inactivity auto-logout */
+// Inactivity auto-logout
 function startInactivityTimer() {
   stopInactivityTimer();
   resetInactivityTimer();
@@ -599,9 +716,11 @@ function startInactivityTimer() {
     document.addEventListener(ev, resetInactivityTimer, { passive: true }),
   );
 }
+
 function stopInactivityTimer() {
   if (inactivityTimer) clearTimeout(inactivityTimer);
 }
+
 function resetInactivityTimer() {
   stopInactivityTimer();
   inactivityTimer = setTimeout(() => {
@@ -648,6 +767,7 @@ function initTheme() {
     document.getElementById("theme-btn").textContent = "☀️";
   }
 }
+
 function toggleTheme() {
   document.body.classList.toggle("light");
   const isLight = document.body.classList.contains("light");
@@ -657,7 +777,7 @@ function toggleTheme() {
   savePrefs(prefs);
 }
 
-/* ── CLOCK ── */
+// Clock
 function startClock() {
   const el = document.getElementById("nav-clock");
   setInterval(() => {
@@ -670,9 +790,70 @@ function startClock() {
   }, 1000);
 }
 
-/* ═══════════════════════════════════════════════
-   RENDER ENGINE
-═══════════════════════════════════════════════ */
+/*IMAGE GALLERY AUTO-ROTATION & HOVER */
+let galleryIntervals = {};
+
+function startImageRotation(bikeId) {
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === bikeId);
+  if (!bike || !bike.gallery || bike.gallery.length <= 1) return;
+
+  // Clear existing interval
+  if (galleryIntervals[bikeId]) {
+    clearInterval(galleryIntervals[bikeId]);
+  }
+
+  // Auto-rotate every 60 seconds
+  galleryIntervals[bikeId] = setInterval(() => {
+    const currentBikes = getBikes();
+    const currentBike = currentBikes.find((b) => b.id === bikeId);
+    if (!currentBike) {
+      clearInterval(galleryIntervals[bikeId]);
+      return;
+    }
+
+    const img = document.querySelector(
+      `[data-bike-id="${bikeId}"] .bike-img img`,
+    );
+    if (!img) return;
+
+    currentBike.currentGalleryIndex =
+      (currentBike.currentGalleryIndex + 1) % currentBike.gallery.length;
+    saveBikes(currentBikes);
+
+    // Fade transition
+    img.classList.add("fade-out");
+    setTimeout(() => {
+      img.src = currentBike.gallery[currentBike.currentGalleryIndex];
+      img.classList.remove("fade-out");
+      img.classList.add("fade-in");
+      setTimeout(() => img.classList.remove("fade-in"), 600);
+    }, 300);
+  }, 60000); // 60 seconds
+}
+
+function setupImageHover(bikeId) {
+  const bikes = getBikes();
+  const bike = bikes.find((b) => b.id === bikeId);
+  if (!bike || !bike.gallery || bike.gallery.length <= 1) return;
+
+  const card = document.querySelector(`[data-bike-id="${bikeId}"]`);
+  if (!card) return;
+
+  const img = card.querySelector(".bike-img img");
+  let hoverIndex = 0;
+
+  card.addEventListener("mouseenter", () => {
+    hoverIndex = (bike.currentGalleryIndex + 1) % bike.gallery.length;
+    img.src = bike.gallery[hoverIndex];
+  });
+
+  card.addEventListener("mouseleave", () => {
+    img.src = bike.gallery[bike.currentGalleryIndex];
+  });
+}
+
+/*RENDER ENGINE*/
 let currentFilter = "all",
   currentSort = "default",
   currentSearch = "";
@@ -696,6 +877,7 @@ function renderAll() {
   renderHistory();
   checkFleetWarning();
   checkExpiredReservations();
+
   if (
     currentUser &&
     document.getElementById("view-admin").classList.contains("active")
@@ -703,7 +885,7 @@ function renderAll() {
     renderAdmin();
 }
 
-/* ── BIKE GRID ── */
+// Bike Grid
 function renderGrid() {
   const bikes = getBikes();
   const maxUse = Math.max(...bikes.map((b) => b.usageCount || 0), 0);
@@ -740,6 +922,7 @@ function renderGrid() {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text3);font-family:var(--font-m);font-size:13px">No bikes match your filter 🚲</div>`;
     return;
   }
+
   grid.innerHTML = list
     .map((b, i) =>
       bikeCard(
@@ -750,6 +933,12 @@ function renderGrid() {
       ),
     )
     .join("");
+
+  // Start image rotation for each bike
+  list.forEach((b) => {
+    startImageRotation(b.id);
+    setupImageHover(b.id);
+  });
 }
 
 function bikeCard(b, isPopular, isFav, idx) {
@@ -766,9 +955,13 @@ function bikeCard(b, isPopular, isFav, idx) {
   };
   const sl = labels[statusClass] || labels[b.status];
 
-  // Image + overlay
-  const imgSrc =
-    b.img || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600";
+  // Image gallery setup
+  const currentImg =
+    b.gallery && b.gallery.length > 0
+      ? b.gallery[b.currentGalleryIndex || 0]
+      : b.img ||
+        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600";
+
   let overlayHtml = "";
   if (b.status === "taken") {
     const stamp =
@@ -787,12 +980,10 @@ function bikeCard(b, isPopular, isFav, idx) {
     : "";
   const favBtn = `<button class="fav-btn${isFav ? " active" : ""}" onclick="toggleFav(${b.id},this)" title="${isFav ? "Unfavorite" : "Favorite"}">${isFav ? "❤️" : "🤍"}</button>`;
 
-  // Tags
   const tags = (b.tags || [])
     .map((t) => `<span class="bike-tag">${t}</span>`)
     .join("");
 
-  // Avg stats
   const avgTime = b.avgDuration ? fmtDuration(Math.round(b.avgDuration)) : "—";
   const avgCard = `<div class="bike-avg">
     <div class="avg-item"><div class="avg-val">${b.usageCount || 0}</div><div class="avg-key">Rentals</div></div>
@@ -800,7 +991,6 @@ function bikeCard(b, isPopular, isFav, idx) {
     <div class="avg-item"><div class="avg-val">${avgTime}</div><div class="avg-key">Avg Time</div></div>
   </div>`;
 
-  // Renter / status info
   let statusBox = "",
     warningHtml = "",
     actionsHtml = "";
@@ -808,17 +998,19 @@ function bikeCard(b, isPopular, isFav, idx) {
   if (b.status === "taken" && b.startTime) {
     const { cost } = calcCharge(b.startTime, Date.now());
     const returnStr = b.returnBy || "—";
-    // warnings
+
     if (b.returnBy) {
       const [rh, rm] = b.returnBy.split(":").map(Number);
       const retMs = new Date();
       retMs.setHours(rh, rm, 0, 0);
       const diff = Math.round((retMs - Date.now()) / 60000);
+
       if (diff <= 0)
         warningHtml = `<div class="overdue-bar">🔴 OVERDUE by ${Math.abs(diff)} min! Cost rising…</div>`;
       else if (diff <= 10)
         warningHtml = `<div class="warning-bar">⚠️ Due back in ${diff} min!</div>`;
     }
+
     const elapsed = Math.round((Date.now() - b.startTime) / 60000);
     if (elapsed >= 55 && elapsed < 65)
       warningHtml = `<div class="warning-bar">⏳ Approaching 1hr — surcharge kicks in!</div>`;
@@ -831,6 +1023,7 @@ function bikeCard(b, isPopular, isFav, idx) {
       <div class="live-timer" id="timer-${b.id}">00:00:00</div>
       <div class="cost-live" id="cost-live-${b.id}">💰 KES ${cost} so far</div>
     </div>`;
+
     actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Rented Out</button><button class="btn btn-notify" onclick="notifyMe(${b.id},'${b.name}')">🔔 Notify</button></div>
     <div class="bike-actions"><button class="btn btn-return" onclick="openReturnModal(${b.id})">✅ Mark Returned</button></div>`;
   } else if (b.status === "reserved") {
@@ -842,6 +1035,7 @@ function bikeCard(b, isPopular, isFav, idx) {
       const retMs = new Date();
       retMs.setHours(rh, rm, 0, 0);
       const diff = Math.max(0, Math.round((retMs - Date.now()) / 60000));
+
       statusBox = `<div class="reserved-box">
         <div class="renter-row"><span class="r-key">Reserved by</span><span class="r-val">${res.name}</span></div>
         <div class="renter-row"><span class="r-key">Until</span><span class="r-val yellow">${res.until}</span></div>
@@ -856,19 +1050,18 @@ function bikeCard(b, isPopular, isFav, idx) {
     </div>`;
     actionsHtml = `<div class="bike-actions"><button class="btn btn-disabled" disabled>Not Available</button></div>`;
   } else {
-    // Available
     actionsHtml = `<div class="bike-actions">
       <button class="btn btn-rent" onclick="openRentModal(${b.id})">Rent This Bike</button>
-      <button class="btn btn-reserve" onclick="openReserveModal(${b.id})">📅</button>
+      <button class="btn btn-reserve" onclick="openReserveModal(${b.id})">RESERVED</button>
     </div>
     <div class="bike-actions"><button class="btn btn-rate" onclick="openRateModal(${b.id},'${b.name}')">⭐ Rate</button></div>`;
   }
 
-  return `<div class="bike-card ${statusClass}${isPopular ? " popular" : ""}" data-status="${b.status}" data-id="${b.id}" style="animation-delay:${delay}s">
+  return `<div class="bike-card ${statusClass}${isPopular ? " popular" : ""}" data-status="${b.status}" data-id="${b.id}" data-bike-id="${b.id}" style="animation-delay:${delay}s">
     <div class="s-badge ${statusClass}"><span class="s-dot"></span>${sl}</div>
     ${popularCrown}
     <div class="bike-img">
-      <img src="${imgSrc}" alt="${b.name}" onerror="this.src='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'"/>
+      <img src="${currentImg}" alt="${b.name}" onerror="this.src='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'"/>
       ${overlayHtml}
     </div>
     <div class="bike-body">
@@ -889,11 +1082,11 @@ function bikeCard(b, isPopular, isFav, idx) {
   </div>`;
 }
 
-/* ── STATS ── */
+// Stats
 function renderStats() {
   const bikes = getBikes();
   const day = getDay();
-  const reserves = getReserves().filter((r) => r.status === "active");
+
   document.getElementById("stat-avail").textContent = bikes.filter(
     (b) => b.status === "available",
   ).length;
@@ -911,7 +1104,7 @@ function renderStats() {
   document.getElementById("stat-rentals").textContent = day.count;
 }
 
-/* ── ANALYTICS ── */
+// Analytics
 function renderAnalytics() {
   const history = getHistory();
   const day = getDay();
@@ -938,14 +1131,16 @@ function renderAnalytics() {
   document.getElementById("ana-res").textContent = activeRes;
 }
 
-/* ── HISTORY ── */
+// History
 function renderHistory() {
   const history = [...getHistory()].reverse();
   const body = document.getElementById("history-body");
+
   if (!history.length) {
     body.innerHTML = `<div class="no-history">No rental history yet 📋</div>`;
     return;
   }
+
   body.innerHTML = `<table class="history-table">
     <thead><tr><th>Bike</th><th>Student</th><th>Start</th><th>Duration</th><th>Cost</th><th>Pay Method</th><th>Status</th><th>Payment</th></tr></thead>
     <tbody>${history
@@ -965,10 +1160,11 @@ function renderHistory() {
   </table>`;
 }
 
-/* ── FLEET WARNING ── */
+// Fleet warning
 function checkFleetWarning() {
   const avail = getBikes().filter((b) => b.status === "available").length;
   const w = document.getElementById("fleet-warning");
+
   if (avail <= 1) {
     document.getElementById("fleet-warn-n").textContent = avail;
     w.style.display = "block";
@@ -978,30 +1174,32 @@ function checkFleetWarning() {
   }
 }
 
-/* ═══════════════════════════════════════════════
-   LIVE TIMERS
-═══════════════════════════════════════════════ */
+/*LIVE TIMERS*/
 function startTimers() {
   if (timerInterval) clearInterval(timerInterval);
+
   timerInterval = setInterval(() => {
     const bikes = getBikes();
     bikes.forEach((b) => {
       if (b.status !== "taken" || !b.startTime) return;
+
       const timerEl = document.getElementById("timer-" + b.id);
       const costEl = document.getElementById("cost-live-" + b.id);
       if (!timerEl) return;
+
       const elapsed = Date.now() - b.startTime;
       timerEl.textContent = [
         String(Math.floor(elapsed / 3600000)).padStart(2, "0"),
         String(Math.floor((elapsed % 3600000) / 60000)).padStart(2, "0"),
         String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0"),
       ].join(":");
+
       if (costEl) {
         const { cost } = calcCharge(b.startTime, Date.now());
         costEl.textContent = `💰 KES ${cost} so far`;
         costEl.style.color = cost > 60 ? "var(--red)" : "var(--green)";
       }
-      // 1hr alert
+
       const mins = Math.round(elapsed / 60000);
       if (mins === 60 && !b._alerted) {
         const b2 = getBikes();
@@ -1018,16 +1216,16 @@ function startTimers() {
         logActivity(`${b.name} surcharge started (${b.renter})`, "system");
       }
     });
+
     if (Date.now() % 30000 < 1100) renderGrid();
   }, 1000);
 }
 
-/* ═══════════════════════════════════════════════
-   RENT FLOW
-═══════════════════════════════════════════════ */
+/*RENT FLOW*/
 function openRentModal(id) {
   const bike = getBikes().find((b) => b.id === id);
   if (!bike || bike.status !== "available") return;
+
   currentRentId = id;
   document.getElementById("rent-modal-sub").textContent =
     `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
@@ -1045,15 +1243,18 @@ function openRentModal(id) {
 function calcCost() {
   const val = document.getElementById("r-return").value;
   const box = document.getElementById("cost-box");
+
   if (!val) {
     box.style.display = "none";
     return;
   }
+
   const [h, m] = val.split(":").map(Number);
   const ret = new Date();
   ret.setHours(h, m, 0, 0);
   let diff = Math.round((ret - Date.now()) / 60000);
   if (diff <= 0) diff = 60;
+
   const extra = Math.max(0, diff - 60);
   box.style.display = "block";
   document.getElementById("extra-m").textContent = extra;
@@ -1077,6 +1278,7 @@ function confirmRent() {
   const sid = document.getElementById("r-sid").value.trim();
   const phone = document.getElementById("r-phone").value.trim();
   const ret = document.getElementById("r-return").value;
+
   if (!name || !sid) {
     toast("Please fill name and student ID", "error");
     return;
@@ -1119,6 +1321,7 @@ function confirmRent() {
   const day = getDay();
   day.count++;
   saveDay(day);
+
   logActivity(`${name} rented ${bike.name}`, "rent");
   closeModal("rent-modal");
   renderAll();
@@ -1126,14 +1329,14 @@ function confirmRent() {
   toast(`🚲 ${name} rented ${bike.name}! Timer started.`, "success");
 }
 
-/* ═══════════════════════════════════════════════
-   RETURN FLOW
-═══════════════════════════════════════════════ */
+/*RETURN FLOW*/
 function openReturnModal(id) {
   const bike = getBikes().find((b) => b.id === id);
   if (!bike || bike.status !== "taken") return;
+
   currentReturnId = id;
   const { mins, cost } = calcCharge(bike.startTime, Date.now());
+
   document.getElementById("ret-modal-sub").textContent =
     `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
   document.getElementById("ret-summary").innerHTML = `
@@ -1141,6 +1344,7 @@ function openReturnModal(id) {
     <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text3);font-size:12px">Duration</span><strong>${fmtDuration(mins)}</strong></div>
     <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-size:12px">Total Due</span><strong style="font-size:22px;font-family:var(--font-d);color:var(--accent)">KES ${cost}</strong></div>
     ${cost > 60 ? `<div style="margin-top:8px;font-size:11px;color:var(--red);font-family:var(--font-m)">Base KES 60 + ${mins - 60} extra min × KES 1 = KES ${cost - 60}</div>` : ""}`;
+
   selectedRetPayStatus = "paid";
   selectedRetPayM = "cash";
   document.getElementById("ret-paid-btn").classList.add("active");
@@ -1158,6 +1362,7 @@ function setRetPayStatus(s, btn) {
     .forEach((b) => b.classList.remove("active"));
   btn.classList.add("active");
 }
+
 function setRetPayM(m, btn) {
   selectedRetPayM = m;
   btn
@@ -1171,11 +1376,11 @@ function confirmReturn() {
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === currentReturnId);
   if (!bike) return;
+
   const { mins, cost } = calcCharge(bike.startTime, Date.now());
   const renter = bike.renter;
   const bikeName = bike.name;
 
-  // Update avg duration
   const prevCount = (bike.usageCount || 1) - 1;
   bike.avgDuration =
     prevCount > 0
@@ -1214,12 +1419,11 @@ function confirmReturn() {
   toast(`✅ ${bikeName} returned. Charge: KES ${cost}`, "success", 5000);
 }
 
-/* ═══════════════════════════════════════════════
-   RESERVATION FLOW
-═══════════════════════════════════════════════ */
+/*RESERVATION FLOW*/
 function openReserveModal(id) {
   const bike = getBikes().find((b) => b.id === id);
   if (!bike || bike.status !== "available") return;
+
   currentReserveId = id;
   document.getElementById("reserve-modal-sub").textContent =
     `${bike.name} · #BC-${String(id).padStart(3, "0")}`;
@@ -1234,6 +1438,7 @@ function confirmReserve() {
   const sid = document.getElementById("res-sid").value.trim();
   const phone = document.getElementById("res-phone").value.trim();
   const until = document.getElementById("res-until").value;
+
   if (!name || !sid || !until) {
     toast("Please fill all fields", "error");
     return;
@@ -1242,6 +1447,7 @@ function confirmReserve() {
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === currentReserveId);
   if (!bike) return;
+
   bike.status = "reserved";
   saveBikes(bikes);
 
@@ -1262,21 +1468,24 @@ function confirmReserve() {
   logActivity(`${name} reserved ${bike.name} until ${until}`, "reserve");
   closeModal("reserve-modal");
   renderAll();
-  toast(`📅 ${bike.name} reserved for ${name} until ${until}!`, "info");
+  toast(`RESERVED ${bike.name} reserved for ${name} until ${until}!`, "info");
 }
 
 function cancelReservation(resId) {
   const res = getReserves();
   const entry = res.find((r) => r.id === resId);
   if (!entry) return;
+
   entry.status = "cancelled";
   saveReserves(res);
+
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === entry.bikeId);
   if (bike && bike.status === "reserved") {
     bike.status = "available";
     saveBikes(bikes);
   }
+
   logActivity(`Reservation for ${entry.bikeName} cancelled`, "cancel");
   renderAll();
   toast(`Reservation cancelled. ${entry.bikeName} is now available.`, "info");
@@ -1285,11 +1494,14 @@ function cancelReservation(resId) {
 function checkExpiredReservations() {
   const res = getReserves();
   let changed = false;
+
   res.forEach((r) => {
     if (r.status !== "active") return;
+
     const [h, m] = r.until.split(":").map(Number);
     const expiry = new Date();
     expiry.setHours(h, m, 0, 0);
+
     if (Date.now() > expiry.getTime() + 60000) {
       r.status = "expired";
       const bikes = getBikes();
@@ -1299,27 +1511,29 @@ function checkExpiredReservations() {
         saveBikes(bikes);
       }
       changed = true;
-      toast(
-        `📅 Reservation for ${r.bikeName} expired — now available!`,
-        "info",
-      );
+      toast(` Reservation for ${r.bikeName} expired — now available!`, "info");
       logActivity(`Reservation for ${r.bikeName} expired`, "system");
     }
   });
+
   if (changed) saveReserves(res);
 }
 
-/* ═══════════════════════════════════════════════
-   ADD / EDIT / REMOVE BIKES
-═══════════════════════════════════════════════ */
+/*ADD / EDIT / REMOVE BIKES*/
 function openAddBikeModal() {
   if (!currentUser || currentUser.role !== "owner") {
     toast("Owner access only", "error");
     return;
   }
-  ["new-name", "new-type", "new-specs", "new-img", "new-tags"].forEach(
-    (i) => (document.getElementById(i).value = ""),
-  );
+
+  [
+    "new-name",
+    "new-type",
+    "new-specs",
+    "new-img",
+    "new-tags",
+    "new-gallery",
+  ].forEach((i) => (document.getElementById(i).value = ""));
   document.getElementById("new-cond").value = "good";
   document.getElementById("ab-preview").style.display = "none";
   openModal("add-bike-modal");
@@ -1328,6 +1542,7 @@ function openAddBikeModal() {
 function prevImg(inputId, previewId) {
   const url = document.getElementById(inputId).value.trim();
   const prev = document.getElementById(previewId);
+
   if (url) {
     prev.src = url;
     prev.style.display = "block";
@@ -1343,16 +1558,29 @@ function addBike() {
   const img = document.getElementById("new-img").value.trim();
   const cond = document.getElementById("new-cond").value;
   const tagsRaw = document.getElementById("new-tags").value;
+  const galleryRaw = document.getElementById("new-gallery").value;
+
   if (!name || !type) {
     toast("Name and type are required", "error");
     return;
   }
+
   const tags = tagsRaw
     ? tagsRaw
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
+  const gallery = galleryRaw
+    ? galleryRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+
+  // If gallery is empty, use primary image
+  const finalGallery = gallery.length > 0 ? gallery : img ? [img] : [];
+
   const bikes = getBikes();
   bikes.push({
     id: nextId(),
@@ -1363,6 +1591,7 @@ function addBike() {
     condition: cond,
     img:
       img || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600",
+    gallery: finalGallery,
     status: "available",
     renter: null,
     sid: null,
@@ -1375,7 +1604,9 @@ function addBike() {
     rating: 0,
     ratingCount: 0,
     maintenanceNote: "",
+    currentGalleryIndex: 0,
   });
+
   saveBikes(bikes);
   logActivity(`${name} added to fleet`, "admin");
   closeModal("add-bike-modal");
@@ -1388,8 +1619,10 @@ function openEditBikeModal(id) {
     toast("Login required", "error");
     return;
   }
+
   const bike = getBikes().find((b) => b.id === id);
   if (!bike) return;
+
   currentEditId = id;
   document.getElementById("edit-bike-id").value = id;
   document.getElementById("edit-modal-sub").textContent =
@@ -1400,7 +1633,11 @@ function openEditBikeModal(id) {
   document.getElementById("edit-cond").value = bike.condition || "good";
   document.getElementById("edit-img").value = bike.img || "";
   document.getElementById("edit-tags").value = (bike.tags || []).join(", ");
+  document.getElementById("edit-gallery").value = (bike.gallery || []).join(
+    ", ",
+  );
   document.getElementById("edit-maint").value = bike.maintenanceNote || "";
+
   const prev = document.getElementById("eb-preview");
   if (bike.img) {
     prev.src = bike.img;
@@ -1408,6 +1645,7 @@ function openEditBikeModal(id) {
   } else {
     prev.style.display = "none";
   }
+
   openModal("edit-bike-modal");
 }
 
@@ -1416,12 +1654,15 @@ function saveEditBike() {
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === id);
   if (!bike) return;
+
   bike.name = document.getElementById("edit-name").value.trim() || bike.name;
   bike.type = document.getElementById("edit-type").value.trim() || bike.type;
   bike.specs = document.getElementById("edit-specs").value.trim() || bike.specs;
   bike.condition = document.getElementById("edit-cond").value;
+
   const img = document.getElementById("edit-img").value.trim();
   if (img) bike.img = img;
+
   const tagsRaw = document.getElementById("edit-tags").value;
   bike.tags = tagsRaw
     ? tagsRaw
@@ -1429,7 +1670,17 @@ function saveEditBike() {
         .map((t) => t.trim())
         .filter(Boolean)
     : bike.tags;
+
+  const galleryRaw = document.getElementById("edit-gallery").value;
+  bike.gallery = galleryRaw
+    ? galleryRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : bike.gallery;
+
   bike.maintenanceNote = document.getElementById("edit-maint").value.trim();
+
   saveBikes(bikes);
   logActivity(`${bike.name} details updated`, "admin");
   closeModal("edit-bike-modal");
@@ -1442,13 +1693,17 @@ function removeBike(id) {
     toast("Owner access only", "error");
     return;
   }
+
   const bike = getBikes().find((b) => b.id === id);
   if (!bike) return;
+
   if (bike.status === "taken") {
     toast("Cannot remove a bike that is currently rented.", "error");
     return;
   }
+
   if (!confirm(`Remove ${bike.name} from the fleet?`)) return;
+
   saveBikes(getBikes().filter((b) => b.id !== id));
   logActivity(`${bike.name} removed from fleet`, "admin");
   renderAll();
@@ -1459,10 +1714,12 @@ function setMaintenance(id, onMaint) {
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === id);
   if (!bike) return;
+
   if (bike.status === "taken" && onMaint) {
     toast("Cannot set maintenance on a rented bike.", "error");
     return;
   }
+
   bike.status = onMaint ? "maintenance" : "available";
   saveBikes(bikes);
   logActivity(
@@ -1476,13 +1733,12 @@ function setMaintenance(id, onMaint) {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   PAYMENT
-═══════════════════════════════════════════════ */
+/*PAYMENT*/
 function openPaymentModal(histId) {
   const h = getHistory();
   const entry = h.find((x) => x.id === histId);
   if (!entry) return;
+
   currentPayHistId = histId;
   document.getElementById("payment-modal-sub").textContent =
     `${entry.bikeName} — ${entry.renter}`;
@@ -1490,6 +1746,7 @@ function openPaymentModal(histId) {
   document.getElementById("payment-summary").innerHTML = `
     <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text3);font-size:12px">Amount Due</span><strong style="font-size:20px;font-family:var(--font-d);color:var(--accent)">KES ${entry.cost}</strong></div>
     <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-size:12px">Duration</span><strong>${fmtDuration(entry.duration)}</strong></div>`;
+
   selectedPaymentM = "cash";
   document
     .querySelectorAll("#payment-modal .pay-opt")
@@ -1510,13 +1767,16 @@ function confirmPayment() {
   const h = getHistory();
   const entry = h.find((x) => x.id === currentPayHistId);
   if (!entry) return;
+
   entry.payStatus = "paid";
   entry.payMethod = selectedPaymentM;
   entry.paidAt = Date.now();
   saveHistory(h);
+
   const day = getDay();
   day.earn += entry.cost;
   saveDay(day);
+
   logActivity(
     `Payment received KES ${entry.cost} for ${entry.bikeName} (${selectedPaymentM})`,
     "payment",
@@ -1529,9 +1789,7 @@ function confirmPayment() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   RATING
-═══════════════════════════════════════════════ */
+/*RATING*/
 function openRateModal(id, name) {
   currentRateId = id;
   selectedRating = 0;
@@ -1558,24 +1816,26 @@ function submitRating() {
     toast("Please select a star rating", "error");
     return;
   }
+
   const bikes = getBikes();
   const bike = bikes.find((b) => b.id === currentRateId);
   if (!bike) return;
+
   const prev = bike.ratingCount || 0;
   bike.rating = ((bike.rating || 0) * prev + selectedRating) / (prev + 1);
   bike.ratingCount = prev + 1;
   saveBikes(bikes);
+
   closeModal("rate-modal");
   renderAll();
   toast(`⭐ Thanks for rating ${bike.name}!`, "success");
 }
 
-/* ═══════════════════════════════════════════════
-   FAVORITES
-═══════════════════════════════════════════════ */
+/*FAVORITES*/
 function toggleFav(id, btn) {
   const favs = getFavorites();
   const idx = favs.indexOf(id);
+
   if (idx > -1) {
     favs.splice(idx, 1);
     btn.textContent = "🤍";
@@ -1585,19 +1845,16 @@ function toggleFav(id, btn) {
     btn.textContent = "❤️";
     btn.classList.add("active");
   }
+
   saveFavorites(favs);
 }
 
-/* ═══════════════════════════════════════════════
-   NOTIFICATIONS
-═══════════════════════════════════════════════ */
+/*NOTIFICATIONS*/
 function notifyMe(id, name) {
-  toast(`🔔 You'll be notified when ${name} is back!`, "info");
+  toast(`You'll be notified when ${name} is back!`, "info");
 }
 
-/* ═══════════════════════════════════════════════
-   FILTER / SORT / SEARCH
-═══════════════════════════════════════════════ */
+/*FILTER / SORT / SEARCH*/
 function filterBikes(status, btn) {
   currentFilter = status;
   document
@@ -1606,24 +1863,25 @@ function filterBikes(status, btn) {
   btn.classList.add("active");
   renderGrid();
 }
+
 function sortBikes(val) {
   currentSort = val;
   renderGrid();
 }
+
 function searchBikes(val) {
   currentSearch = val;
   renderGrid();
 }
 
-/* ═══════════════════════════════════════════════
-   ADMIN RENDER
-═══════════════════════════════════════════════ */
+/* ADMIN RENDER*/
 function renderAdmin() {
   if (!currentUser) return;
+
   const isOwner = currentUser.role === "owner";
   document.getElementById("admin-role-badge").textContent =
     currentUser.role.toUpperCase() + " — " + currentUser.name;
-  // Hide owner-only controls for staff
+
   ["btn-add-bike", "btn-reset-day", "btn-export", "accounts-panel"].forEach(
     (id) => {
       const el = document.getElementById(id);
@@ -1665,19 +1923,22 @@ function renderAdmin() {
   renderAdminHistory();
 }
 
-/* ── CHARTS ── */
+// Charts
 function renderCharts() {
   const history = getHistory().filter((h) => h.startTime);
+
   // Peak hours
   const hours = new Array(24).fill(0);
   history.forEach((h) => {
     const hr = new Date(h.startTime).getHours();
     hours[hr]++;
   });
+
   const slots = [];
   for (let i = 6; i <= 22; i++) slots.push({ h: i, c: hours[i] });
   const maxH = Math.max(...slots.map((x) => x.c), 1);
   const barW = Math.floor(320 / slots.length) - 2;
+
   const peakBars = slots
     .map((d, i) => {
       const bh = d.c ? Math.max(8, Math.round((d.c / maxH) * 100)) : 4;
@@ -1689,6 +1950,7 @@ function renderCharts() {
     ${d.c ? `<text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" font-size="8" fill="var(--text2)">${d.c}</text>` : ""}`;
     })
     .join("");
+
   document.getElementById("chart-peak").innerHTML =
     `<svg viewBox="0 0 320 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:130px">${peakBars}</svg>`;
 
@@ -1700,6 +1962,7 @@ function renderCharts() {
     .forEach((h) => {
       bikeRevenue[h.bikeName] = (bikeRevenue[h.bikeName] || 0) + h.cost;
     });
+
   const revEntries = bikes
     .map((b) => ({ name: b.name.split(" ")[0], rev: bikeRevenue[b.name] || 0 }))
     .filter((x) => x.rev > 0);
@@ -1707,6 +1970,7 @@ function renderCharts() {
   const revBarW = revEntries.length
     ? Math.floor(280 / revEntries.length) - 4
     : 40;
+
   const revBars = revEntries
     .map((d, i) => {
       const bh = Math.max(8, Math.round((d.rev / maxR) * 100));
@@ -1717,6 +1981,7 @@ function renderCharts() {
     <text x="${x + revBarW / 2}" y="${y - 3}" text-anchor="middle" font-size="8" fill="var(--text2)">${d.rev}</text>`;
     })
     .join("");
+
   document.getElementById("chart-revenue").innerHTML = revEntries.length
     ? `<svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:130px">${revBars}</svg>`
     : `<div style="text-align:center;padding:40px;font-family:var(--font-m);font-size:11px;color:var(--text3)">No data yet</div>`;
@@ -1725,6 +1990,7 @@ function renderCharts() {
   const top3 = [...bikes]
     .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
     .slice(0, 3);
+
   document.getElementById("chart-top3").innerHTML =
     top3
       .map(
@@ -1741,14 +2007,16 @@ function renderCharts() {
     `<div style="text-align:center;padding:30px;font-family:var(--font-m);font-size:11px;color:var(--text3)">No data yet</div>`;
 }
 
-/* ── ACTIVITY FEED ── */
+// Activity Feed
 function renderActivityFeed() {
   const log = getActivity().slice(0, 30);
   const wrap = document.getElementById("activity-feed");
+
   if (!log.length) {
     wrap.innerHTML = `<div class="feed-empty">No activity yet. Start renting! 🚲</div>`;
     return;
   }
+
   wrap.innerHTML = log
     .map(
       (entry) => `
@@ -1761,14 +2029,16 @@ function renderActivityFeed() {
     .join("");
 }
 
-/* ── ACCOUNTS LIST ── */
+// Accounts List
 function renderAccountsList() {
   const accounts = getAccounts();
   const list = document.getElementById("accounts-list");
+
   if (!accounts.length) {
     list.innerHTML = `<div class="no-history">No accounts yet</div>`;
     return;
   }
+
   list.innerHTML = accounts
     .map(
       (a) => `<div class="acc-item">
@@ -1782,10 +2052,11 @@ function renderAccountsList() {
     .join("");
 }
 
-/* ── FLEET TABLE ── */
+// Fleet Table
 function renderFleetTable() {
   const bikes = getBikes();
   const isOwner = currentUser?.role === "owner";
+
   document.getElementById("fleet-tbody").innerHTML = bikes
     .map((b) => {
       const isActive = b.status === "taken";
@@ -1793,12 +2064,12 @@ function renderFleetTable() {
         isActive && b.startTime
           ? calcCharge(b.startTime, Date.now())
           : { mins: 0, cost: 0 };
-      // Find unpaid history for this bike if active
       const unpaidEntry = isActive
         ? getHistory()
             .filter((h) => h.bikeId === b.id && h.status === "active")
             .slice(-1)[0]
         : null;
+
       return `<tr>
       <td><strong>${b.name}</strong><br><span style="font-family:var(--font-m);font-size:10px;color:var(--text3)">#BC-${String(b.id).padStart(3, "0")}</span></td>
       <td style="font-size:12px;color:var(--text2)">${b.type}</td>
@@ -1824,20 +2095,23 @@ function renderFleetTable() {
     .join("");
 }
 
-/* ── RESERVATIONS ── */
+// Reservations
 function renderReservations() {
   const res = getReserves().filter((r) => r.status === "active");
   const wrap = document.getElementById("reservations-list");
+
   if (!res.length) {
-    wrap.innerHTML = `<div class="no-history" style="padding:20px">No active reservations 📅</div>`;
+    wrap.innerHTML = `<div class="no-history" style="padding:20px">No active reservations</div>`;
     return;
   }
+
   wrap.innerHTML = res
     .map((r) => {
       const [h, m] = r.until.split(":").map(Number);
       const exp = new Date();
       exp.setHours(h, m, 0, 0);
       const diff = Math.max(0, Math.round((exp - Date.now()) / 60000));
+
       return `<div class="res-item">
       <div class="res-info">
         <div class="res-name">${r.bikeName} → ${r.name}</div>
@@ -1852,14 +2126,16 @@ function renderReservations() {
     .join("");
 }
 
-/* ── MAINTENANCE ── */
+// Maintenance
 function renderMaintenance() {
   const bikes = getBikes().filter((b) => b.status === "maintenance");
   const wrap = document.getElementById("maintenance-list");
+
   if (!bikes.length) {
-    wrap.innerHTML = `<div class="no-history" style="padding:20px">No bikes under maintenance 🔧</div>`;
+    wrap.innerHTML = `<div class="no-history" style="padding:20px">No bikes under maintenance</div>`;
     return;
   }
+
   wrap.innerHTML = bikes
     .map(
       (b) => `<div class="maint-item">
@@ -1873,14 +2149,16 @@ function renderMaintenance() {
     .join("");
 }
 
-/* ── ADMIN HISTORY ── */
+// Admin History
 function renderAdminHistory() {
   const h = [...getHistory()].reverse();
   const wrap = document.getElementById("admin-history");
+
   if (!h.length) {
-    wrap.innerHTML = `<div class="no-history">No rental history yet 📋</div>`;
+    wrap.innerHTML = `<div class="no-history">No rental history yet</div>`;
     return;
   }
+
   wrap.innerHTML = `
     <div class="history-head">
       <div class="history-title">All Rentals</div>
@@ -1911,15 +2189,14 @@ function renderAdminHistory() {
     </table>`;
 }
 
-/* ═══════════════════════════════════════════════
-   EXPORT
-═══════════════════════════════════════════════ */
+/* EXPORT*/
 function exportCSV() {
   const h = getHistory();
   if (!h.length) {
     toast("No history to export", "warn");
     return;
   }
+
   const header = [
     "Bike",
     "Student",
@@ -1944,6 +2221,7 @@ function exportCSV() {
     e.payMethod || "cash",
     e.status,
   ]);
+
   const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -1952,41 +2230,87 @@ function exportCSV() {
   a.download = `campuscycle_${new Date().toLocaleDateString("en-KE").replace(/\//g, "-")}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-  toast("📥 CSV exported!", "success");
+  toast("CSV exported!", "success");
 }
 
 function exportPDF() {
   window.print();
 }
 
-/* ═══════════════════════════════════════════════
-   RESET DAY
-═══════════════════════════════════════════════ */
+/*RESET DAY*/
 function resetDay() {
   if (!currentUser || currentUser.role !== "owner") {
     toast("Owner only", "error");
     return;
   }
+
   if (!confirm("Reset today's earnings and rental count? (History preserved)"))
     return;
+
   saveDay({ date: new Date().toDateString(), earn: 0, count: 0 });
   logActivity("Day stats reset by " + currentUser.name, "admin");
   renderAll();
-  toast("Day stats reset ✅", "info");
+  toast("Day stats reset ", "info");
 }
 
-/* ═══════════════════════════════════════════════
-   MODAL HELPERS
-═══════════════════════════════════════════════ */
+/*SYSTEM RESET (Owner Only - Delete Everything)*/
+function deleteAllData() {
+  if (!currentUser || currentUser.role !== "owner") {
+    toast("Owner access only", "error");
+    return;
+  }
+
+  const confirmation = prompt(
+    'WARNING: This will delete ALL data (bikes, accounts, history, reservations).\n\nType "DELETE EVERYTHING" to confirm:',
+  );
+
+  if (confirmation !== "DELETE EVERYTHING") {
+    toast("Deletion cancelled", "info");
+    return;
+  }
+
+  // Clear all localStorage
+  Object.values(K).forEach((key) => localStorage.removeItem(key));
+
+  // Log out and reset
+  currentUser = null;
+  localStorage.clear();
+
+  toast("All data deleted! Reloading...", "warn", 2000);
+
+  setTimeout(() => {
+    window.location.reload();
+  }, 2000);
+}
+
+/*MODAL HELPERS*/
 function openModal(id) {
+  if (id === "profile-modal" && currentUser) {
+    document.getElementById("profile-card").innerHTML = `
+      <div class="p-name">${currentUser.name}</div>
+      <div class="p-row"><span class="p-key">Username</span><span>@${currentUser.username}</span></div>
+      <div class="p-row"><span class="p-key">Role</span><span class="acc-role-pill ${currentUser.role}">${currentUser.role}</span></div>
+      <div class="p-row"><span class="p-key">Account Since</span><span>${new Date(currentUser.createdAt).toLocaleDateString("en-KE")}</span></div>
+      <div class="p-row"><span class="p-key">Last Login</span><span>${currentUser.lastLogin ? fmtTime(currentUser.lastLogin) : "First time"}</span></div>
+      ${
+        currentUser.role === "owner"
+          ? `<div class="p-row" style="border-top: 2px solid var(--red); margin-top: 10px; padding-top: 10px;">
+        <button class="btn-full" style="background: var(--red); margin-top: 10px;" onclick="deleteAllData()">Delete All Data</button>
+      </div>`
+          : ""
+      }`;
+  }
   document.getElementById(id).classList.add("open");
 }
+
 function closeModal(id) {
   document.getElementById(id).classList.remove("open");
 }
+
 function handleBdClick(e, id) {
   if (e.target.id === id) closeModal(id);
 }
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape")
     [
@@ -1999,27 +2323,11 @@ document.addEventListener("keydown", (e) => {
       "profile-modal",
       "change-pw-modal",
       "rate-modal",
+      "add-staff-modal",
     ].forEach(closeModal);
 });
 
-/* ── PROFILE MODAL ── */
-function openProfileModal() {
-  if (!currentUser) return;
-  document.getElementById("profile-card").innerHTML = `
-    <div class="p-name">${currentUser.name}</div>
-    <div class="p-row"><span class="p-key">Username</span><span>@${currentUser.username}</span></div>
-    <div class="p-row"><span class="p-key">Role</span><span class="acc-role-pill ${currentUser.role}">${currentUser.role.toUpperCase()}</span></div>
-    <div class="p-row"><span class="p-key">Account Since</span><span>${new Date(currentUser.createdAt).toLocaleDateString("en-KE")}</span></div>
-    <div class="p-row"><span class="p-key">Last Login</span><span>${currentUser.lastLogin ? fmtTime(currentUser.lastLogin) : "First time"}</span></div>`;
-  openModal("profile-modal");
-}
-
-/* Override openModal to populate profile */
-const _origOpen = openModal;
-
-/* ═══════════════════════════════════════════════
-   VIEW SWITCHER
-═══════════════════════════════════════════════ */
+/*VIEW SWITCHER*/
 function switchView(view, btn) {
   document
     .querySelectorAll(".view")
@@ -2031,10 +2339,7 @@ function switchView(view, btn) {
   if (btn) btn.classList.add("active");
 }
 
-/* ═══════════════════════════════════════════════
-   AUTO SYSTEMS
-═══════════════════════════════════════════════ */
-// Midnight reset
+/*AUTO SYSTEMS*/
 function checkMidnightReset() {
   const day = getDay();
   if (day.date !== new Date().toDateString()) {
@@ -2049,6 +2354,7 @@ setInterval(() => {
   checkMidnightReset();
   renderStats();
   renderAnalytics();
+
   if (
     currentUser &&
     document.getElementById("view-admin").classList.contains("active")
@@ -2060,9 +2366,7 @@ setInterval(() => {
   }
 }, 10000);
 
-/* ═══════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════ */
+/*INIT*/
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   startClock();
@@ -2072,27 +2376,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAll();
   startTimers();
 
-  // If admin tab is active and user is logged in, render admin
   if (currentUser) startInactivityTimer();
-
-  // Profile modal hook
-  document.getElementById("profile-modal").addEventListener("click", (e) => {
-    if (e.target.id === "profile-modal") closeModal("profile-modal");
-  });
-  // Populate profile when opened
-  document.querySelector("[onclick=\"openModal('profile-modal')\"]");
 });
-
-// Patch openModal to auto-populate profile
-window.openModal = function (id) {
-  if (id === "profile-modal" && currentUser) {
-    document.getElementById("profile-card").innerHTML = `
-      <div class="p-name">${currentUser.name}</div>
-      <div class="p-row"><span class="p-key">Username</span><span>@${currentUser.username}</span></div>
-      <div class="p-row"><span class="p-key">Role</span><span class="acc-role-pill ${currentUser.role}">${currentUser.role}</span></div>
-      <div class="p-row"><span class="p-key">Account Since</span><span>${new Date(currentUser.createdAt).toLocaleDateString("en-KE")}</span></div>
-      <div class="p-row"><span class="p-key">Last Login</span><span>${currentUser.lastLogin ? fmtTime(currentUser.lastLogin) : "First time"}</span></div>`;
-  }
-  document.getElementById(id).classList.add("open");
-};
-window.closeModal = closeModal;

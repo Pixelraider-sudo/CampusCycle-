@@ -1,6 +1,4 @@
-/* ════════════════════════════════
-   CSS VARIABLES — DARK (default)
-════════════════════════════════ */
+/* CSS VARIABLES — DARK */
 :root {
   --bg: #080808;
   --surface: #111;
@@ -33,10 +31,7 @@
   --r3: 8px;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
-
-/* ════════════════════════════════
-   LIGHT MODE
-════════════════════════════════ */
+/* LIGHT MODE */
 body.light {
   --bg: #f0efe8;
   --surface: #e5e4dc;
@@ -50,9 +45,7 @@ body.light {
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
-/* ════════════════════════════════
-   RESET & BASE
-════════════════════════════════ */
+/* RESET & BASE */
 * {
   margin: 0;
   padding: 0;
@@ -84,9 +77,7 @@ body {
   border-radius: 99px;
 }
 
-/* ════════════════════════════════
-   TOAST
-════════════════════════════════ */
+/* TOAST */
 #toast-wrap {
   position: fixed;
   bottom: 28px;
@@ -133,9 +124,7 @@ body {
   color: var(--yellow);
 }
 
-/* ════════════════════════════════
-   NAV
-════════════════════════════════ */
+/* NAV */
 nav {
   position: sticky;
   top: 0;
@@ -290,9 +279,7 @@ body.light nav {
   background: var(--red-dim);
 }
 
-/* ════════════════════════════════
-   VIEWS
-════════════════════════════════ */
+/* VIEWS */
 .view {
   display: none;
 }
@@ -300,9 +287,7 @@ body.light nav {
   display: block;
 }
 
-/* ════════════════════════════════
-   AUTH VIEW
-════════════════════════════════ */
+/* AUTH VIEW */
 .auth-wrap {
   min-height: calc(100vh - 60px);
   display: flex;
@@ -469,9 +454,7 @@ body.light nav {
   color: var(--text2);
 }
 
-/* ════════════════════════════════
-   HERO
-════════════════════════════════ */
+/* HERO */
 .hero {
   padding: 36px 40px 28px;
   background:
@@ -569,9 +552,7 @@ body.light nav {
   margin-top: 3px;
 }
 
-/* ════════════════════════════════
-   STATS BAR
-════════════════════════════════ */
+/* STATS BAR */
 .stats-bar {
   display: flex;
   padding: 0 40px;
@@ -591,9 +572,6 @@ body.light nav {
 }
 .stat-item:last-child {
   border-right: none;
-}
-.stat-ico {
-  font-size: 18px;
 }
 .stat-data {
   display: flex;
@@ -625,9 +603,7 @@ body.light nav {
   margin-top: 2px;
 }
 
-/* ════════════════════════════════
-   FLEET WARNING
-════════════════════════════════ */
+/* FLEET WARNING */
 .fleet-warning {
   background: var(--yellow-dim);
   border-bottom: 1px solid rgba(243, 156, 18, 0.3);
@@ -649,9 +625,7 @@ body.light nav {
   }
 }
 
-/* ════════════════════════════════
-   CONTROLS
-════════════════════════════════ */
+/* CONTROLS */
 .controls {
   padding: 18px 40px;
   display: flex;
@@ -700,9 +674,7 @@ body.light nav {
   cursor: pointer;
 }
 
-/* ════════════════════════════════
-   SECTION TITLE
-════════════════════════════════ */
+/* SECTION TITLE */
 .section-title {
   padding: 24px 40px 14px;
   font-family: var(--font-d);
@@ -720,9 +692,7 @@ body.light nav {
   background: var(--border);
 }
 
-/* ════════════════════════════════
-   BIKE GRID
-════════════════════════════════ */
+/* BIKE GRID */
 .bike-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -730,9 +700,7 @@ body.light nav {
   padding: 0 40px 32px;
 }
 
-/* ════════════════════════════════
-   BIKE CARD
-════════════════════════════════ */
+/* BIKE CARD */
 .bike-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -865,6 +833,7 @@ body.light nav {
   transform: scale(1.2);
 }
 
+/* BIKE IMAGE WITH AUTO-ROTATION AND HOVER */
 .bike-img {
   position: relative;
   height: 190px;
@@ -875,11 +844,22 @@ body.light nav {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition:
+    transform 0.5s ease,
+    opacity 0.6s ease;
 }
 .bike-card:hover .bike-img img {
   transform: scale(1.07);
 }
+
+/* Auto-rotation animation */
+.bike-img img.fade-out {
+  opacity: 0;
+}
+.bike-img img.fade-in {
+  opacity: 1;
+}
+
 .taken-overlay {
   position: absolute;
   inset: 0;
@@ -1195,9 +1175,7 @@ body.light nav {
   border: 1px solid var(--border);
 }
 
-/* ════════════════════════════════
-   ANALYTICS
-════════════════════════════════ */
+/* ANALYTICS */
 .analytics {
   padding: 8px 40px 48px;
 }
@@ -1219,10 +1197,6 @@ body.light nav {
 .ana-card:hover {
   border-color: var(--border2);
   transform: translateY(-2px);
-}
-.ana-icon {
-  font-size: 22px;
-  margin-bottom: 10px;
 }
 .ana-val {
   font-family: var(--font-d);
@@ -1330,9 +1304,7 @@ body.light nav {
   font-size: 12px;
 }
 
-/* ════════════════════════════════
-   ADMIN
-════════════════════════════════ */
+/* ADMIN */
 .admin-hero {
   padding: 32px 40px;
   background: var(--surface);
@@ -1440,7 +1412,6 @@ body.light nav {
   color: var(--blue);
 }
 
-/* Charts */
 .charts-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1469,7 +1440,6 @@ body.light nav {
   display: block;
 }
 
-/* Admin split */
 .admin-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1482,7 +1452,6 @@ body.light nav {
   }
 }
 
-/* Activity feed */
 .feed-wrap {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1531,7 +1500,6 @@ body.light nav {
   font-size: 11px;
 }
 
-/* Accounts list */
 #accounts-list .acc-item {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -1570,7 +1538,6 @@ body.light nav {
   color: var(--blue);
 }
 
-/* Fleet table */
 .fleet-section {
   padding: 0 40px 32px;
 }
@@ -1652,7 +1619,6 @@ body.light nav {
   background: var(--yellow-dim);
 }
 
-/* Reservations */
 #reservations-list .res-item,
 #maintenance-list .maint-item {
   background: var(--card);
@@ -1682,9 +1648,7 @@ body.light nav {
   color: var(--yellow);
 }
 
-/* ════════════════════════════════
-   MODALS
-════════════════════════════════ */
+/* MODALS */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -1865,7 +1829,6 @@ select.form-input {
   line-height: 1.5;
 }
 
-/* Pay toggle */
 .pay-toggle {
   display: flex;
   gap: 8px;
@@ -1894,7 +1857,6 @@ select.form-input {
   font-weight: 700;
 }
 
-/* Profile card */
 .profile-card {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -1922,7 +1884,6 @@ select.form-input {
   color: var(--text3);
 }
 
-/* Stars */
 .star-picker {
   display: flex;
   justify-content: center;
@@ -1950,9 +1911,7 @@ select.form-input {
   color: var(--text3);
 }
 
-/* ════════════════════════════════
-   RESPONSIVE
-════════════════════════════════ */
+/* RESPONSIVE */
 @media (max-width: 640px) {
   nav {
     padding: 0 16px;
@@ -1988,7 +1947,6 @@ select.form-input {
   }
 }
 
-/* Print styles */
 @media print {
   nav,
   .controls,
@@ -2014,7 +1972,8 @@ select.form-input {
     color: #000;
   }
 }
-footer{
+
+footer {
   text-align: center;
   padding: 20px;
   font-family: var(--font-m);
